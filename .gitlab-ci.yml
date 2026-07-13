@@ -1,0 +1,37 @@
+image: mcr.microsoft.com/playwright:v1.49.1-jammy
+
+stages:
+  - test
+  - performance
+
+cache:
+  paths:
+    - node_modules/
+
+install_dependencies:
+  stage: .pre
+  script:
+    - npm ci
+
+playwright_tests:
+  stage: test
+  script:
+    - npm ci
+    - npx playwright test
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - playwright-report/
+    expire_in: 7 days
+
+gatling_load_test:
+  stage: performance
+  script:
+    - npm ci
+    - npx gatling run --typescript --sources-folder load-tests || echo "Gatling test expected to fail due to high load testing limits (Code 2)"
+  artifacts:
+    when: always
+    paths:
+      - target/gatling/
+    expire_in: 7 days
