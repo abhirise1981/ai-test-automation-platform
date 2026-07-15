@@ -35,6 +35,9 @@ Labels lack the `for` attribute, breaking ARIA compliance.
 ### Workaround Applied:
 For the automated test suite (`tests/ui/ecommerce.spec.ts`), we gracefully degraded the locators for the personal information form from `getByLabel` to direct CSS ID selectors (`#first_name`, `#password`, etc.) to ensure pipeline stability.
 
+### Test Evidence:
+*Please refer to the attached Playwright Trace Viewer logs (`trace.zip`) which demonstrate the `getByLabel` strict mode failure at the registration step.*
+
 ---
 
 ## [BUG-002] Navigation Hijacked by Google Vignette Ads Overlay
@@ -67,6 +70,9 @@ Disable third-party Google Ad scripts in development/sandbox environments, or im
 ### Workaround Applied:
 Implemented dynamic URL redirection logic in the Page Object Model (POM) classes. If the URL contains `#google_vignette`, the page is forced to navigate directly to the target URL using `page.goto()`.
 
+### Test Evidence:
+*Please refer to the attached Playwright video recording (`ad_hijack.webm`) showing the iframe overlay blocking the pointer events during the `click` action.*
+
 ---
 
 ## [BUG-003] Improper Error Handling / Missing JSON on Invalid API Endpoint
@@ -97,6 +103,9 @@ The API returns a `404 Not Found` status code, but the `Content-Type` is `text/h
 
 ### Workaround Applied:
 In our automated test suite (`tests/api/location.spec.ts`), we asserted strictly on the `404` status code and bypassed attempting to parse `.json()` on invalid endpoints to prevent test runner crashes.
+
+### Test Evidence:
+*Please refer to the attached API Response Payload screenshot showing the `Content-Type: text/html` header and raw XML/HTML body.*
 
 ---
 
@@ -134,3 +143,6 @@ Update the font link tags in the HTML header to use secure HTTPS URLs or protoco
 <!-- After -->
 <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
 ```
+
+### Test Evidence:
+*Please refer to the attached browser console screenshot showing the Mixed Content blocking errors.*

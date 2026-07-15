@@ -1,10 +1,10 @@
 {
-  "editor.quickSuggestions": { "other": false, "comments": false, "strings": false },
-  "editor.suggestOnTriggerCharacters": false,
-  "editor.suggest.snippetsPreventQuickSuggestions": false,
+  "editor.quickSuggestions": { "other": true, "comments": false, "strings": false },
+  "editor.suggestOnTriggerCharacters": true,
   "editor.inlineSuggest.enabled": false,
-  "editor.suggest.showWords": false,
   "editor.wordBasedSuggestions": "off",
-  "editor.parameterHints.enabled": false,
-  "editor.suggest.showSnippets": false
+  "github.copilot.enable": { "*": false },
+  "github.copilot.inlineSuggest.enable": false,
+  "tabnine.experimentalAutoImports": false,
+  "codeium.enableConfig": { "*": false }
 }

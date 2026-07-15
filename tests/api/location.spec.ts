@@ -31,7 +31,7 @@ test.describe('REST API Location & Geocoding Tests', () => {
     expect(location).toHaveProperty('lat');
     expect(location).toHaveProperty('lon');
     expect(location).toHaveProperty('display_name');
-    
+
     console.log(`Retrieved location: ${location.display_name} (Lat: ${location.lat}, Lon: ${location.lon})`);
   });
 
@@ -64,7 +64,7 @@ test.describe('REST API Location & Geocoding Tests', () => {
     expect(response.status()).toBe(201);
 
     const body = await response.json();
-    
+
     // Validate the sent data matches
     expect(body.title).toBe(locationData.title);
     expect(body.body).toBe(locationData.body);
@@ -113,4 +113,5 @@ test.describe('REST API Location & Geocoding Tests', () => {
     expect(response.status()).toBe(500);
     console.log(`Verified error handling for non-existent PUT returned status code: ${response.status()}`);
   });
+
 });
