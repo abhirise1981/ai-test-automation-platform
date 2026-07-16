@@ -15,9 +15,7 @@
 // Reads from the exact same environmentConfig as Playwright —
 // guaranteeing load tests always target the same environment as functional tests.
 // ─────────────────────────────────────────────────────────────────────────────
-import { environmentConfig } from '../config/envConfig';
-
-export const TARGET_BASE_URL = environmentConfig.baseUrl;
+export const TARGET_BASE_URL = 'https://automationexercise.com';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HTTP Protocol Headers
@@ -59,6 +57,5 @@ export const LOAD_PROFILES = {
 
 export type LoadProfileKey = keyof typeof LOAD_PROFILES;
 
-// Resolve the active profile from the environment variable, defaulting to 'stress'
-const profileKey = (process.env.LOAD_PROFILE ?? 'stress') as LoadProfileKey;
-export const ACTIVE_PROFILE = LOAD_PROFILES[profileKey] ?? LOAD_PROFILES.stress;
+// Hardcoded for Gatling JS runtime which lacks process.env
+export const ACTIVE_PROFILE = LOAD_PROFILES.stress;
