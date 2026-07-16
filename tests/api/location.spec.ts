@@ -32,7 +32,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('GET /search — Geocoding Endpoint', () => {
 
-    test('TC-07: Returns 200 OK and valid coordinate schema for a known city (London)', async () => {
+    test('API-01: Returns 200 OK and valid coordinate schema for a known city (London)', async () => {
       const response = await apiClient.searchLocation('London');
 
       expect(response.status()).toBe(200);
@@ -57,8 +57,9 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
     });
 
     // Data-Driven Test: Run the same schema validation for multiple cities
-    for (const city of testConfig.api.cities) {
-      test(`TC-07-DD: Returns 200 OK with valid schema for: ${city.name}`, async () => {
+    testConfig.api.cities.forEach((city, index) => {
+      const testId = `API-${String(index + 2).padStart(2, '0')}`;
+      test(`${testId}: Returns 200 OK with valid schema for: ${city.name}`, async () => {
         const response = await apiClient.searchLocation(city.name);
 
         expect(response.status()).toBe(200);
@@ -80,7 +81,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       });
     }
 
-    test('TC-08: Returns 404 Not Found for an invalid/non-existent endpoint path', async () => {
+    test('API-05: Returns 404 Not Found for an invalid/non-existent endpoint path', async () => {
       const response = await apiClient.searchInvalidEndpoint();
 
       expect(response.status()).toBe(404);
@@ -94,7 +95,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('Security — Authentication Tests', () => {
 
-    test('TC-09: Returns 401 Unauthorized when no credentials are provided to a protected endpoint', async () => {
+    test('API-06: Returns 401 Unauthorized when no credentials are provided to a protected endpoint', async () => {
       const response = await apiClient.accessProtectedEndpointWithoutAuth();
 
       expect(response.status()).toBe(401);
@@ -108,7 +109,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('GET /posts — Retrieve Location Resources', () => {
 
-    test('TC-10a: Returns 200 OK and a non-empty list when retrieving all locations', async () => {
+    test('API-07: Returns 200 OK and a non-empty list when retrieving all locations', async () => {
       const response = await apiClient.getAllLocations();
 
       expect(response.status()).toBe(200);
@@ -119,7 +120,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       console.log(`✓ Retrieved ${body.length} location records.`);
     });
 
-    test('TC-10b: Returns 200 OK and correct schema for a single location by ID', async () => {
+    test('API-08: Returns 200 OK and correct schema for a single location by ID', async () => {
       const response = await apiClient.getLocationById(1);
 
       expect(response.status()).toBe(200);
@@ -139,7 +140,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('POST /posts — Create Location Resource', () => {
 
-    test('TC-11a: Returns 201 Created with correct response body for valid location payload', async () => {
+    test('API-09: Returns 201 Created with correct response body for valid location payload', async () => {
       const response = await apiClient.createLocation(testConfig.api.sampleLocation);
 
       expect(response.status()).toBe(201);
@@ -157,7 +158,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       console.log(`✓ Location created: "${body.title}" (ID: ${body.id})`);
     });
 
-    test('TC-11b: Returns 201 Created and response body contains all required fields', async () => {
+    test('API-10: Returns 201 Created and response body contains all required fields', async () => {
       const response = await apiClient.createLocation(testConfig.api.sampleLocation);
 
       expect(response.status()).toBe(201);
@@ -178,7 +179,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('PUT /posts/:id — Update Location Resource', () => {
 
-    test('TC-12a: Returns 200 OK and reflects updated values for an existing resource', async () => {
+    test('API-11: Returns 200 OK and reflects updated values for an existing resource', async () => {
       const response = await apiClient.updateLocation(1, testConfig.api.updatedLocation);
 
       expect(response.status()).toBe(200);
@@ -189,7 +190,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       console.log(`✓ Location updated: "${body.title}"`);
     });
 
-    test('TC-12b: [BUG] Returns 500 Server Error when updating a non-existent resource ID (should be 404)', async () => {
+    test('API-12: [BUG] Returns 500 Server Error when updating a non-existent resource ID (should be 404)', async () => {
       // This test documents a KNOWN BUG in the API.
       // Expected behaviour: 404 Not Found (resource does not exist)
       // Actual behaviour: 500 Internal Server Error (server crashes)
@@ -207,7 +208,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('DELETE /posts/:id — Delete Location Resource', () => {
 
-    test('TC-13: Returns 200 OK when deleting an existing location resource', async () => {
+    test('API-13: Returns 200 OK when deleting an existing location resource', async () => {
       const response = await apiClient.deleteLocation(1);
 
       expect(response.status()).toBe(200);
@@ -223,7 +224,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('Advanced Geocoding & Corner Cases', () => {
     
-    test('TC-14: Returns empty array for empty search query', async () => {
+    test('API-14: Returns empty array for empty search query', async () => {
       const response = await apiClient.searchLocation('');
       expect(response.status()).toBe(200);
       const body = await response.json();
@@ -231,7 +232,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       // Nominatim might return some default results or empty, but it shouldn't crash.
     });
 
-    test('TC-15: Returns empty array for invalid special character search', async () => {
+    test('API-15: Returns empty array for invalid special character search', async () => {
       const response = await apiClient.searchLocation('!@#$%^&*()_+');
       expect(response.status()).toBe(200);
       const body = await response.json();
@@ -239,7 +240,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       expect(body.length).toBe(0);
     });
 
-    test('TC-16: Returns 200 OK for valid reverse geocoding', async () => {
+    test('API-16: Returns 200 OK for valid reverse geocoding', async () => {
       const response = await apiClient.reverseGeocode('51.5074', '-0.1278'); // London
       expect(response.status()).toBe(200);
       const body = await response.json();
@@ -247,7 +248,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       expect(body.address).toHaveProperty('city');
     });
 
-    test('TC-17: [BUG] Returns 200 OK instead of 400 Bad Request for invalid coordinates in reverse geocode', async () => {
+    test('API-17: [BUG] Returns 200 OK instead of 400 Bad Request for invalid coordinates in reverse geocode', async () => {
       // Nominatim API returns a 200 OK with an error message instead of 400 Bad Request
       const response = await apiClient.reverseGeocode('999', '999'); 
       expect(response.status()).toBe(200);
@@ -263,14 +264,14 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('Advanced Authentication', () => {
 
-    test('TC-18: Returns 200 OK with valid Basic Auth credentials', async () => {
+    test('API-18: Returns 200 OK with valid Basic Auth credentials', async () => {
       const response = await apiClient.accessProtectedEndpointWithAuth('postman', 'password');
       expect(response.status()).toBe(200);
       const body = await response.json();
       expect(body.authenticated).toBe(true);
     });
 
-    test('TC-19: Returns 401 Unauthorized with invalid Basic Auth credentials', async () => {
+    test('API-19: Returns 401 Unauthorized with invalid Basic Auth credentials', async () => {
       const response = await apiClient.accessProtectedEndpointWithAuth('wronguser', 'wrongpass');
       expect(response.status()).toBe(401);
     });
@@ -282,12 +283,12 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('Advanced CRUD & REST Permutations', () => {
 
-    test('TC-20: Returns 404 Not Found for non-existent resource GET', async () => {
+    test('API-20: Returns 404 Not Found for non-existent resource GET', async () => {
       const response = await apiClient.getLocationById(999999);
       expect(response.status()).toBe(404);
     });
 
-    test('TC-21: Returns 200 OK and filtered results when using query parameters', async () => {
+    test('API-21: Returns 200 OK and filtered results when using query parameters', async () => {
       const response = await apiClient.getLocationsByQuery({ userId: 1 });
       expect(response.status()).toBe(200);
       const body = await response.json();
@@ -297,7 +298,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       body.forEach((item: any) => expect(item.userId).toBe(1));
     });
 
-    test('TC-22: Returns 200 OK and applies partial updates via PATCH', async () => {
+    test('API-22: Returns 200 OK and applies partial updates via PATCH', async () => {
       const partialData = { title: 'Patched Title Only' };
       const response = await apiClient.patchLocation(1, partialData);
       expect(response.status()).toBe(200);
@@ -307,7 +308,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       expect(body).toHaveProperty('userId'); 
     });
 
-    test('TC-23: Handles POST with extra unknown fields gracefully (ignores them)', async () => {
+    test('API-23: Handles POST with extra unknown fields gracefully (ignores them)', async () => {
       const payloadWithExtra = { ...testConfig.api.sampleLocation, unknownField: 'should be ignored' };
       const response = await apiClient.createLocation(payloadWithExtra);
       expect(response.status()).toBe(201);

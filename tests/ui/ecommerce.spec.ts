@@ -27,7 +27,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await homePage.navigateTo('/');
   });
 
-  test('User Registration and Login Flow', async () => {
+  test('TC-01: User Registration and Login Flow', async () => {
     await homePage.navigateToRegister();
     
     await loginPage.signUpAndRegister(
@@ -48,7 +48,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     expect(await homePage.isLoggedIn()).toBe(true);
   });
 
-  test('Negative Login Flow with Invalid Credentials', async ({ page }) => {
+  test('TC-02: Negative Login Flow with Invalid Credentials', async ({ page }) => {
     await homePage.navigateToLogin();
     
     // Attempt login with invalid credentials
@@ -60,7 +60,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
 
   // Data-Driven Parameterized Tests for Search
   for (const criteria of testConfig.searchCriteria) {
-    test(`Product Search for criteria: ${criteria}`, async () => {
+    test(`TC-03, TC-04, TC-05: Product Search for criteria: ${criteria}`, async () => {
       await homePage.navigateToProducts();
       await homePage.searchProduct(criteria);
       
@@ -70,7 +70,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     });
   }
 
-  test('Add Product to Cart and Complete Checkout Flow', async () => {
+  test('TC-06: Add Product to Cart and Complete Checkout Flow', async () => {
     // 1. Signup / Register first to proceed to checkout smoothly later
     await homePage.navigateToRegister();
     await loginPage.signUpAndRegister(
@@ -104,7 +104,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     console.log('Order successfully placed and confirmed!');
   });
 
-  test('Remove Product from Cart', async ({ page }) => {
+  test('TC-07: Remove Product from Cart', async ({ page }) => {
     await homePage.navigateToProducts();
     await homePage.searchProduct(testConfig.searchCriteria[0]); // MacBook
     await homePage.addFirstSearchedProductToCart();
@@ -120,7 +120,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await expect(emptyMsg).toContainText('Your shopping cart is empty!');
   });
 
-  test('Navigate Categories and Verify Products', async ({ page }) => {
+  test('TC-08: Navigate Categories and Verify Products', async ({ page }) => {
     await homePage.navigateTo('/');
     
     // Instead of hover, navigate directly to laptops & notebooks category via URL
@@ -133,7 +133,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     expect(await products.count()).toBeGreaterThan(0);
   });
 
-  test('Contact Us Form Submission', async ({ page }) => {
+  test('TC-09: Contact Us Form Submission', async ({ page }) => {
     await page.goto(ROUTES.CONTACT);
     
     await page.locator(LOCATORS.CONTACT.NAME_INPUT).fill(testConfig.username);
@@ -148,7 +148,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await expect(page.getByRole('link', { name: LOCATORS.NAV.CONTINUE_LINK_TEXT })).toBeVisible();
   });
 
-  test('Add Product to Wishlist (Requires Login)', async ({ page }) => {
+  test('TC-10: Add Product to Wishlist (Requires Login)', async ({ page }) => {
     await homePage.navigateToRegister();
     await loginPage.signUpAndRegister(
       testConfig.username,
@@ -173,14 +173,14 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     expect(await wishlistRows.count()).toBeGreaterThan(0);
   });
 
-  test('[Negative] Search for Non-Existent Product', async ({ page }) => {
+  test('TC-11: [Negative] Search for Non-Existent Product', async ({ page }) => {
     await homePage.navigateToProducts();
     await homePage.searchProduct(testConfig.negative.invalidProduct);
     const msg = page.locator(LOCATORS.HOME.CONTENT_PARAGRAPH).nth(1);
     await expect(msg).toHaveText(/There is no product that matches the search criteria/);
   });
 
-  test('[Negative] Checkout with Empty Cart', async ({ page }) => {
+  test('TC-12: [Negative] Checkout with Empty Cart', async ({ page }) => {
     await homePage.navigateToCart();
     
     // Attempting to proceed to checkout when cart is empty
@@ -194,7 +194,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await expect(msg).toContainText('Your shopping cart is empty!');
   });
 
-  test('[Negative] Register with Existing Email', async ({ page }) => {
+  test('TC-13: [Negative] Register with Existing Email', async ({ page }) => {
     await homePage.navigateToRegister();
     // Generate a fresh unique email specifically for this negative test to guarantee it's not registered
     // by a previous test run on this environment.
@@ -219,7 +219,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await expect(alert).toContainText('Warning: E-Mail Address is already registered!');
   });
 
-  test('[Negative] Register with Mismatched Passwords', async ({ page }) => {
+  test('TC-14: [Negative] Register with Mismatched Passwords', async ({ page }) => {
     await homePage.navigateToRegister();
     await loginPage.firstNameInput.fill(testConfig.registration.firstName);
     await loginPage.lastNameInput.fill(testConfig.registration.lastName);
@@ -234,7 +234,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await expect(errorMsg).toContainText('Password confirmation does not match password!');
   });
 
-  test('[Negative] Submit Contact Form Empty', async ({ page }) => {
+  test('TC-15: [Negative] Submit Contact Form Empty', async ({ page }) => {
     await page.goto(ROUTES.CONTACT);
     await page.locator(LOCATORS.CONTACT.SUBMIT_BTN).click();
     
@@ -248,7 +248,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await expect(enquiryError).toBeVisible();
   });
 
-  test('[Negative] Add Out of Stock Item and Checkout', async ({ page }) => {
+  test('TC-16: [Negative] Add Out of Stock Item and Checkout', async ({ page }) => {
     await homePage.navigateToProducts();
     // iMac is known to trigger the *** out of stock warning on OpenCart demo
     await homePage.searchProduct(testConfig.negative.outOfStockProduct);
@@ -265,7 +265,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await expect(page).toHaveURL(new RegExp(ROUTES.CART.replace('?', '\\?')));
   });
 
-  test('[Corner Case] Login with Empty Credentials', async ({ page }) => {
+  test('TC-17: [Corner Case] Login with Empty Credentials', async ({ page }) => {
     await homePage.navigateToLogin();
     await loginPage.loginButton.click();
     
@@ -273,7 +273,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await expect(errorAlert).toContainText('Warning: No match for E-Mail Address and/or Password.');
   });
 
-  test('[Corner Case] Subscribe to Newsletter', async ({ page }) => {
+  test('TC-18: [Corner Case] Subscribe to Newsletter', async ({ page }) => {
     await homePage.navigateToRegister();
     const randomEmail = 'newsletter_' + Date.now() + '@example.com';
     await loginPage.signUpAndRegister(testConfig.username, randomEmail, testConfig.password);
@@ -286,7 +286,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await expect(successAlert).toContainText('Success: Your newsletter subscription has been successfully updated!');
   });
 
-  test('[Corner Case] Add Product to Compare', async ({ page }) => {
+  test('TC-19: [Corner Case] Add Product to Compare', async ({ page }) => {
     // Navigate explicitly to the demo home page, because beforeEach '/' goes to the root domain!
     await homePage.navigateTo(ROUTES.HOME);
     
@@ -298,7 +298,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await expect(successMsg).toContainText('Success: You have added');
   });
 
-  test('[Corner Case] Navigate to Brands (Manufacturers) Page', async ({ page }) => {
+  test('TC-20: [Corner Case] Navigate to Brands (Manufacturers) Page', async ({ page }) => {
     // Navigate explicitly to the demo home page
     await homePage.navigateTo(ROUTES.HOME);
     
