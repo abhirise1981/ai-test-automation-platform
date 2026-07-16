@@ -1,39 +1,49 @@
 import { simulation, scenario, rampUsers, global } from "@gatling.io/core";
 import { http, status } from "@gatling.io/http";
+import { TARGET_BASE_URL, HTTP_HEADERS, ACTIVE_PROFILE } from "./load-test.config";
 
+/**
+ * ecommerce.gatling.ts — Simulation Execution File
+ *
+ * This file contains ONLY simulation logic (what to do and how to inject users).
+ * It contains ZERO configuration values — all config comes from load-test.config.ts.
+ *
+ * This mirrors the same separation used in the Playwright test suite:
+ *   playwright.config.ts → framework & environment config
+ *   testConfig.ts        → test data
+ *   *.spec.ts            → assertions only
+ *
+ * Similarly here:
+ *   load-test.config.ts     → all load test config (URLs, profiles, SLAs)
+ *   ecommerce.gatling.ts    → simulation logic only
+ */
+
+// ── HTTP Protocol ─────────────────────────────────────────────────────────────
+const httpProtocol = http
+  .baseUrl(TARGET_BASE_URL)
+  .acceptHeader(HTTP_HEADERS.acceptHeader)
+  .acceptLanguageHeader(HTTP_HEADERS.acceptLanguage)
+  .userAgentHeader(HTTP_HEADERS.userAgent);
+
+// ── Scenario ──────────────────────────────────────────────────────────────────
+const homepageScenario = scenario(`Toptal Load Test — ${ACTIVE_PROFILE.label}`)
+  .exec(
+    http('GET Homepage')
+      .get('/')
+      .check(status().is(200))
+  );
+
+// ── Simulation Setup ──────────────────────────────────────────────────────────
 export default simulation((setUp) => {
-  // Define the base URL for the e-commerce site we tested in Part 1
-  const httpProtocol = http
-    .baseUrl("https://automationexercise.com")
-    .acceptHeader("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-    .header("Authorization", "Bearer YOUR_DUMMY_TOKEN_HERE"); // Added to demonstrate knowledge of auth headers
-
-  // Define the scenario: What a single user will do
-  const scn = scenario("Toptal Load Test - Homepage")
-    .exec(
-      http("GET Homepage")
-        .get("/")
-        .check(status().is(200)) // Ensure we get a 200 OK
-    );
-
-  // ------------------------------------------------------------------------
-  // INJECTION PROFILES & SLAs
-  // ------------------------------------------------------------------------
-  
-  // PROFILE 1: Capacity Load (Just below the server breaking point)
-  // const injectionProfile = rampUsers(400).during(10);
-  // const maxResponseTimeSLA = 10000; 
-  
-  // PROFILE 2: Stress Load (Default CI/CD Gate)
-  const injectionProfile = rampUsers(1000).during(15);
-  const maxResponseTimeSLA = 2000;
-
   setUp(
-    scn.injectOpen(injectionProfile)
-  ).protocols(httpProtocol)
-  // Assertions act as CI/CD gates: the test will fail if these SLAs are not met
+    homepageScenario.injectOpen(
+      rampUsers(ACTIVE_PROFILE.users).during(ACTIVE_PROFILE.durationSeconds)
+    )
+  )
+  .protocols(httpProtocol)
+  // CI/CD gates — pipeline fails if either SLA is breached
   .assertions(
-    global().successfulRequests().percent().gte(95), // Success rate must be >= 95%
-    global().responseTime().max().lt(maxResponseTimeSLA) // Dynamic SLA based on profile
+    global().successfulRequests().percent().gte(ACTIVE_PROFILE.successRatePct),
+    global().responseTime().max().lt(ACTIVE_PROFILE.maxResponseMs)
   );
 });

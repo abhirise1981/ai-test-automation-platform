@@ -17,25 +17,30 @@ This repository contains a comprehensive test automation suite built for a scree
 ```text
 toptal-project-assessment/
 ├── .gitlab-ci.yml           # GitLab CI/CD pipeline configuration
-├── docs/                    # Test documentation & bug reports
-│   └── test_cases.md        # Plain English test scenarios
-├── BUG_REPORT.md            # Formal bug ticket report
-├── LOAD_TEST_REPORT.md      # Detailed analysis of Gatling load test
-├── load-tests/              # Gatling Load tests
-│   └── ecommerce.gatling.ts # Gatling TS Load Test Plan (1000 users / 15s)
-├── pages/                   # Page Object Models (POM)
-│   ├── BasePage.ts          # Common actions & page transitions
-│   ├── HomePage.ts          # Home & product search interactions
-│   ├── LoginPage.ts         # User signup & authentication
-│   ├── CartPage.ts          # Cart validation
-│   └── CheckoutPage.ts      # Checkout comments and payment details
-├── tests/                   # Playwright Test Specs
+├── docs/
+│   └── test_cases.md        # Full test cases in plain English (for all audiences)
+├── BUG_REPORT.md            # Formal Jira-style bug tickets from testing
+├── LOAD_TEST_REPORT.md      # Detailed analysis of Gatling load test results
+├── config/
+│   └── testConfig.ts        # Single source of truth for ALL environment config
+│                            # (UI baseURL, API endpoints, test data — all env-driven)
+├── api/                     # API Object Model (Service Client Layer)
+│   └── LocationApiClient.ts # Encapsulates all HTTP calls — tests never call request.get() directly
+├── pages/                   # UI Page Object Models (POM)
+│   ├── BasePage.ts          # Shared navigateTo(), getPageTitle() methods
+│   ├── HomePage.ts          # Products navigation, search, add-to-cart
+│   ├── LoginPage.ts         # User signup, registration form, login
+│   ├── CartPage.ts          # Cart item count and name validation
+│   └── CheckoutPage.ts      # Order comment, payment details, order confirmation
+├── tests/                   # Playwright Test Specs (assertions only, no raw HTTP/locator calls)
 │   ├── api/
-│   │   └── location.spec.ts # REST API tests (GET, POST, PUT, DELETE)
+│   │   └── location.spec.ts # 7 REST API tests (GET 200, GET 404, GET 401, POST 201, PUT 200, DELETE 200, PUT 500)
 │   └── ui/
-│       └── ecommerce.spec.ts# UI flow tests (Registration, Search, Checkout)
+│       └── ecommerce.spec.ts# 6 UI tests (Registration, Negative Login, 3x Search, Checkout)
+├── load-tests/
+│   └── ecommerce.gatling.ts # Gatling load test — 1000 users / 15 seconds
 ├── package.json             # Project dependencies
-├── playwright.config.ts     # Playwright configuration
+├── playwright.config.ts     # Playwright config — baseURL sourced from testConfig
 └── tsconfig.json            # TypeScript compiler configuration
 ```
 

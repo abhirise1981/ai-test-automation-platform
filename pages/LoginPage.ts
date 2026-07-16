@@ -1,99 +1,69 @@
 import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { ROUTES, LOCATORS } from '../config/uiConstants';
+import { testConfig } from '../config/testConfig';
 
 export class LoginPage extends BasePage {
-  private readonly loginEmailInput: Locator;
-  private readonly loginPasswordInput: Locator;
-  private readonly loginButton: Locator;
+  readonly loginEmailInput: Locator;
+  readonly loginPasswordInput: Locator;
+  readonly loginButton: Locator;
 
-  private readonly signupNameInput: Locator;
-  private readonly signupEmailInput: Locator;
-  private readonly signupButton: Locator;
-
-  // Account creation details locators
-  private readonly genderMrRadio: Locator;
-  private readonly passwordInput: Locator;
-  private readonly daysSelect: Locator;
-  private readonly monthsSelect: Locator;
-  private readonly yearsSelect: Locator;
-  private readonly firstNameInput: Locator;
-  private readonly lastNameInput: Locator;
-  private readonly addressInput: Locator;
-  private readonly countrySelect: Locator;
-  private readonly stateInput: Locator;
-  private readonly cityInput: Locator;
-  private readonly zipcodeInput: Locator;
-  private readonly mobileInput: Locator;
-  private readonly createAccountButton: Locator;
-  private readonly accountCreatedHeader: Locator;
-  private readonly continueButton: Locator;
+  // Registration Form
+  readonly firstNameInput: Locator;
+  readonly lastNameInput: Locator;
+  readonly emailInput: Locator;
+  readonly telephoneInput: Locator;
+  readonly passwordInput: Locator;
+  readonly confirmPasswordInput: Locator;
+  readonly agreeTermsCheckbox: Locator;
+  readonly continueButton: Locator;
 
   constructor(page: Page) {
     super(page);
-    this.loginEmailInput = this.page.getByTestId('login-email');
-    this.loginPasswordInput = this.page.getByTestId('login-password');
-    this.loginButton = this.page.getByTestId('login-button');
+    // Login
+    this.loginEmailInput = this.page.locator(LOCATORS.LOGIN_PAGE.EMAIL_INPUT);
+    this.loginPasswordInput = this.page.locator(LOCATORS.LOGIN_PAGE.PASSWORD_INPUT);
+    this.loginButton = this.page.locator(LOCATORS.LOGIN_PAGE.LOGIN_BTN);
 
-    this.signupNameInput = this.page.getByTestId('signup-name');
-    this.signupEmailInput = this.page.getByTestId('signup-email');
-    this.signupButton = this.page.getByTestId('signup-button');
-
-    this.genderMrRadio = this.page.locator('#id_gender1');
-    this.passwordInput = this.page.locator('#password');
-    this.daysSelect = this.page.locator('#days'); 
-    this.monthsSelect = this.page.locator('#months');
-    this.yearsSelect = this.page.locator('#years');
-    this.firstNameInput = this.page.locator('#first_name');
-    this.lastNameInput = this.page.locator('#last_name');
-    this.addressInput = this.page.locator('#address1');
-    this.countrySelect = this.page.locator('#country');
-    this.stateInput = this.page.locator('#state');
-    this.cityInput = this.page.locator('#city');
-    this.zipcodeInput = this.page.locator('#zipcode');
-    this.mobileInput = this.page.locator('#mobile_number');
-    this.createAccountButton = this.page.getByTestId('create-account');
-    this.accountCreatedHeader = this.page.getByText('Account Created!');
-    this.continueButton = this.page.getByTestId('continue-button');
+    // Register
+    this.firstNameInput = this.page.locator(LOCATORS.REGISTER_PAGE.FIRSTNAME);
+    this.lastNameInput = this.page.locator(LOCATORS.REGISTER_PAGE.LASTNAME);
+    this.emailInput = this.page.locator(LOCATORS.REGISTER_PAGE.EMAIL);
+    this.telephoneInput = this.page.locator(LOCATORS.REGISTER_PAGE.TELEPHONE);
+    this.passwordInput = this.page.locator(LOCATORS.REGISTER_PAGE.PASSWORD);
+    this.confirmPasswordInput = this.page.locator(LOCATORS.REGISTER_PAGE.CONFIRM_PASSWORD);
+    this.agreeTermsCheckbox = this.page.locator(LOCATORS.REGISTER_PAGE.AGREE_CHECKBOX);
+    this.continueButton = this.page.locator(LOCATORS.REGISTER_PAGE.CONTINUE_BTN);
   }
 
   async login(email: string, password: string): Promise<void> {
     await this.loginEmailInput.fill(email);
     await this.loginPasswordInput.fill(password);
     await this.loginButton.click();
-    // Bypass Google Vignette Ads if they hijack the login form submit navigation
-    if (this.page.url().includes('#google_vignette')) {
-      await this.page.goto('https://automationexercise.com/', { waitUntil: 'domcontentloaded' });
-    }
   }
 
-  async signUpAndRegister(name: string, email: string, password: string): Promise<void> {
-    await this.signupNameInput.fill(name);
-    await this.signupEmailInput.fill(email);
-    await this.signupButton.click();
-    // Bypass Google Vignette Ads if they hijack the signup step 1 click navigation
-    if (this.page.url().includes('#google_vignette')) {
-      await this.page.goto('https://automationexercise.com/signup', { waitUntil: 'domcontentloaded' });
-    }
+  async signUpAndRegister(
+    name: string,
+    email: string,
+    password: string
+  ): Promise<void> {
+    // OpenCart requires more fields for registration. We'll derive them.
+    const nameParts = name.split(' ');
+    const firstName = nameParts[0] || testConfig.registration.firstName;
+    const lastName = nameParts[1] || testConfig.registration.lastName;
 
-    // Fill registration form
-    await this.genderMrRadio.click();
+    await this.firstNameInput.fill(firstName);
+    await this.lastNameInput.fill(lastName);
+    await this.emailInput.fill(email);
+    await this.telephoneInput.fill(testConfig.registration.mobile);
     await this.passwordInput.fill(password);
-    await this.daysSelect.selectOption('10');
-    await this.monthsSelect.selectOption('5');
-    await this.yearsSelect.selectOption('1995');
-    await this.firstNameInput.fill('Abhishek');
-    await this.lastNameInput.fill('Kumar');
-    await this.addressInput.fill('123 QA Test Lane');
-    await this.countrySelect.selectOption('United States');
-    await this.stateInput.fill('California');
-    await this.cityInput.fill('San Francisco');
-    await this.zipcodeInput.fill('94101');
-    await this.mobileInput.fill('1234567890');
+    await this.confirmPasswordInput.fill(password);
     
-    await this.createAccountButton.click();
-    await this.accountCreatedHeader.waitFor({ state: 'visible' });
+    // Playwright's check() sometimes fails on custom styled checkboxes if they rely on JS click events
+    await this.agreeTermsCheckbox.click();
+    await this.continueButton.click();
     
-    // Navigate directly to avoid Google Vignette Ad overlays hijacking the continue click navigation
-    await this.page.goto('https://automationexercise.com/', { waitUntil: 'domcontentloaded' });
+    // Wait for the success page to load explicitly instead of networkidle
+    await this.page.waitForURL(ROUTES.ACCOUNT_SUCCESS_REGEX, { timeout: 15000 });
   }
 }

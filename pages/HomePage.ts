@@ -1,56 +1,52 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { ROUTES, LOCATORS } from '../config/uiConstants';
 
 export class HomePage extends BasePage {
-  private readonly productsLink: Locator;
-  private readonly cartLink: Locator;
+  private readonly myAccountDropdown: Locator;
   private readonly loginLink: Locator;
   private readonly logoutLink: Locator;
-  private readonly loggedInUserText: Locator;
-
-  // Search locators (on /products page)
   private readonly searchInput: Locator;
   private readonly searchButton: Locator;
-  private readonly searchedProductsHeader: Locator;
   private readonly productItems: Locator;
+  private readonly cartLink: Locator;
 
   constructor(page: Page) {
     super(page);
-    this.productsLink = this.page.getByRole('link', { name: 'Products' });
-    this.cartLink = this.page.getByRole('link', { name: 'Cart' }).first();
-    this.loginLink = this.page.getByRole('link', { name: 'Signup / Login' });
-    this.logoutLink = this.page.getByRole('link', { name: 'Logout' });
-    this.loggedInUserText = this.page.getByText('Logged in as');
-
-    this.searchInput = this.page.locator('#search_product');
-    this.searchButton = this.page.locator('#submit_search');
-    this.searchedProductsHeader = this.page.getByRole('heading', { name: 'Searched Products' });
-    this.productItems = this.page.locator('.features_items .col-sm-4');
+    this.myAccountDropdown = this.page.locator(LOCATORS.NAV.MY_ACCOUNT);
+    this.loginLink = this.page.getByRole('link', { name: LOCATORS.NAV.LOGIN_LINK_TEXT }).first();
+    this.logoutLink = this.page.getByRole('link', { name: LOCATORS.NAV.LOGOUT_LINK_TEXT, exact: true }).first();
+    
+    this.searchInput = this.page.locator(LOCATORS.HOME.SEARCH_INPUT);
+    this.searchButton = this.page.locator(LOCATORS.HOME.SEARCH_BUTTON);
+    this.productItems = this.page.locator(LOCATORS.HOME.PRODUCT_ITEMS);
+    this.cartLink = this.page.getByRole('link', { name: LOCATORS.NAV.CART_LINK_TEXT });
   }
 
-  async clickProducts(): Promise<void> {
-    // Navigate directly to avoid Google Vignette Ad overlays hijacking link clicks
-    await this.page.goto('https://automationexercise.com/products', { waitUntil: 'domcontentloaded' });
+  async navigateToProducts(): Promise<void> {
+    await this.navigateTo(ROUTES.PRODUCTS);
   }
 
-  async clickCart(): Promise<void> {
-    // Navigate directly to avoid Google Vignette Ad overlays hijacking link clicks
-    await this.page.goto('https://automationexercise.com/view_cart', { waitUntil: 'domcontentloaded' });
+  async navigateToCart(): Promise<void> {
+    await this.navigateTo(ROUTES.CART);
   }
 
-  async clickLogin(): Promise<void> {
-    // Navigate directly to avoid Google Vignette Ad overlays hijacking link clicks
-    await this.page.goto('https://automationexercise.com/login', { waitUntil: 'domcontentloaded' });
+  async navigateToLogin(): Promise<void> {
+    await this.navigateTo(ROUTES.LOGIN);
   }
 
-  async clickLogout(): Promise<void> {
-    // Navigate directly to avoid Google Vignette Ad overlays hijacking link clicks
-    await this.page.goto('https://automationexercise.com/logout', { waitUntil: 'domcontentloaded' });
+  async navigateToRegister(): Promise<void> {
+    await this.navigateTo(ROUTES.REGISTER);
+  }
+
+  async navigateToLogout(): Promise<void> {
+    await this.navigateTo(ROUTES.LOGOUT);
   }
 
   async isLoggedIn(): Promise<boolean> {
     try {
-      await this.loggedInUserText.waitFor({ state: 'visible', timeout: 8000 });
+      await this.myAccountDropdown.click();
+      await this.logoutLink.waitFor({ state: 'visible', timeout: 5000 });
       return true;
     } catch {
       return false;
@@ -58,14 +54,13 @@ export class HomePage extends BasePage {
   }
 
   async getLoggedInUsername(): Promise<string> {
-    const text = await this.loggedInUserText.textContent();
-    return text ? text.replace('Logged in as ', '').trim() : '';
+    return ''; // Not easily visible on OpenCart top bar
   }
 
   async searchProduct(criteria: string): Promise<void> {
     await this.searchInput.fill(criteria);
     await this.searchButton.click();
-    await this.searchedProductsHeader.waitFor({ state: 'visible' });
+    await this.page.waitForLoadState('networkidle');
   }
 
   async getSearchedProductsCount(): Promise<number> {
@@ -73,26 +68,22 @@ export class HomePage extends BasePage {
   }
 
   async addFirstSearchedProductToCart(): Promise<void> {
-    // Click 'View Product' on the first item to avoid home page overlay flakiness
-    const firstProduct = this.productItems.first();
-    await firstProduct.getByRole('link', { name: 'View Product' }).click();
+    const firstProductCartBtn = this.page.locator(LOCATORS.HOME.FIRST_PRODUCT_CART_BTN).first();
+    const successAlert = this.page.locator(LOCATORS.HOME.SUCCESS_ALERT);
+
+    await firstProductCartBtn.click();
     
-    // This site uses legacy jQuery for the Add to Cart functionality.
-    // If we click too fast, the event listener isn't attached yet and the click is ignored.
-    // We use Playwright's expect.poll to safely retry the click until the cart modal actually appears.
-    const addToCartButton = this.page.getByRole('button', { name: 'Add to cart' });
-    const cartModal = this.page.locator('#cartModal');
-    
-    // Use Playwright's native auto-retrying expect block (expect.toPass).
-    // This is the cleanest way to handle legacy site race conditions. 
-    // It will repeatedly click and check for the modal until it succeeds, eliminating the need for complex loops.
-    await expect(async () => {
-      await addToCartButton.click();
-      await expect(cartModal).toBeVisible();
-    }).toPass();
-    
-    // Click "Continue Shopping" to close the modal safely
-    const continueButton = this.page.getByRole('button', { name: 'Continue Shopping' });
-    await continueButton.click();
+    // Playwright Best Practice: Use Promise.race for branching state instead of try/catch timeouts.
+    // This immediately resolves as soon as EITHER the alert appears OR the URL changes, eliminating artificial delays.
+    const outcome = await Promise.race([
+      this.page.waitForURL(ROUTES.PRODUCT_DETAILS_REGEX, { timeout: 15000 }).then(() => 'redirect'),
+      successAlert.waitFor({ state: 'visible', timeout: 15000 }).then(() => 'success')
+    ]);
+
+    if (outcome === 'redirect') {
+      // If the product requires options (like HP's delivery date), it redirects. Add it from here.
+      await this.page.locator(LOCATORS.PRODUCT_PAGE.ADD_TO_CART_BTN).click();
+      await expect(successAlert).toBeVisible();
+    }
   }
 }

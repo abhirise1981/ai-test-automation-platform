@@ -1,30 +1,41 @@
 import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { ROUTES, LOCATORS } from '../config/uiConstants';
 
 export class CartPage extends BasePage {
-  private readonly proceedToCheckoutButton: Locator;
-  private readonly cartRows: Locator;
+  private readonly checkoutButton: Locator;
+  private readonly cartItemRows: Locator;
+  private readonly itemNames: Locator;
 
   constructor(page: Page) {
     super(page);
-    this.proceedToCheckoutButton = this.page.getByText('Proceed To Checkout');
-    this.cartRows = this.page.locator('#cart_info_table tbody tr'); // Complex nested rows are best kept as CSS
+    this.checkoutButton = this.page.getByRole('link', { name: LOCATORS.CART.CHECKOUT_BTN_TEXT, exact: true });
+    this.cartItemRows = this.page.locator(LOCATORS.CART.TABLE_ROWS);
+    this.itemNames = this.page.locator(LOCATORS.CART.ITEM_NAMES);
   }
 
   async proceedToCheckout(): Promise<void> {
-    await this.proceedToCheckoutButton.click();
-    // Bypass Google Vignette Ads if they hijack the checkout navigation
-    if (this.page.url().includes('#google_vignette')) {
-      await this.page.goto('https://automationexercise.com/checkout', { waitUntil: 'domcontentloaded' });
-    }
+    await this.checkoutButton.click();
+  }
+
+  async removeFirstProduct(): Promise<void> {
+    const removeBtn = this.page.locator(LOCATORS.CART.REMOVE_BTN).first();
+    await removeBtn.click();
+    // Wait for the cart to update
+    await this.page.waitForLoadState('networkidle');
   }
 
   async getCartItemsCount(): Promise<number> {
-    return await this.cartRows.count();
+    return await this.cartItemRows.count();
   }
 
   async getCartItemNames(): Promise<string[]> {
-    const texts = await this.cartRows.getByRole('heading').allTextContents();
-    return texts.map(text => text.trim()).filter(text => text.length > 0);
+    const count = await this.itemNames.count();
+    const names: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const name = await this.itemNames.nth(i).textContent();
+      if (name) names.push(name.trim());
+    }
+    return names;
   }
 }
