@@ -1,6 +1,6 @@
-import { Page, Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { ROUTES, LOCATORS } from '../config/uiConstants';
+import { LOCATORS, ROUTES } from '../config/uiConstants';
 
 export class CartPage extends BasePage {
   private readonly checkoutButton: Locator;
@@ -34,7 +34,7 @@ export class CartPage extends BasePage {
     const names: string[] = [];
     for (let i = 0; i < count; i++) {
       const name = await this.itemNames.nth(i).textContent();
-      if (name) names.push(name.trim());
+      if (name) {names.push(name.trim());}
     }
     return names;
   }

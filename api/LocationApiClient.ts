@@ -1,4 +1,4 @@
-import { APIRequestContext, APIResponse } from '@playwright/test';
+import type { APIRequestContext, APIResponse } from '@playwright/test';
 import { environmentConfig } from '../config/envConfig';
 import { testConfig } from '../config/testConfig';
 
@@ -20,7 +20,7 @@ export class LocationApiClient {
 
   private readonly defaultHeaders: Record<string, string> = {
     'User-Agent': testConfig.api.userAgent,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   };
 
   constructor(request: APIRequestContext) {
@@ -42,7 +42,7 @@ export class LocationApiClient {
   async searchLocation(city: string): Promise<APIResponse> {
     return await this.request.get(`${this.osmBaseUrl}/search`, {
       headers: this.defaultHeaders,
-      params: { q: city, format: 'json', limit: 1 }
+      params: { q: city, format: 'json', limit: 1 },
     });
   }
 
@@ -51,7 +51,7 @@ export class LocationApiClient {
    */
   async searchInvalidEndpoint(): Promise<APIResponse> {
     return await this.request.get(`${this.osmBaseUrl}/invalid_endpoint_path_for_testing`, {
-      headers: this.defaultHeaders
+      headers: this.defaultHeaders,
     });
   }
 
@@ -76,7 +76,7 @@ export class LocationApiClient {
   async createLocation(data: object): Promise<APIResponse> {
     return await this.request.post(`${this.jsonplaceholderBaseUrl}/posts`, {
       headers: this.defaultHeaders,
-      data
+      data,
     });
   }
 
@@ -86,7 +86,7 @@ export class LocationApiClient {
   async updateLocation(id: number, data: object): Promise<APIResponse> {
     return await this.request.put(`${this.jsonplaceholderBaseUrl}/posts/${id}`, {
       headers: this.defaultHeaders,
-      data
+      data,
     });
   }
 
@@ -95,7 +95,7 @@ export class LocationApiClient {
    */
   async deleteLocation(id: number): Promise<APIResponse> {
     return await this.request.delete(`${this.jsonplaceholderBaseUrl}/posts/${id}`, {
-      headers: this.defaultHeaders
+      headers: this.defaultHeaders,
     });
   }
 
@@ -104,7 +104,7 @@ export class LocationApiClient {
    */
   async getLocationById(id: number): Promise<APIResponse> {
     return await this.request.get(`${this.jsonplaceholderBaseUrl}/posts/${id}`, {
-      headers: this.defaultHeaders
+      headers: this.defaultHeaders,
     });
   }
 
@@ -113,19 +113,19 @@ export class LocationApiClient {
    */
   async getAllLocations(): Promise<APIResponse> {
     return await this.request.get(`${this.jsonplaceholderBaseUrl}/posts`, {
-      headers: this.defaultHeaders
+      headers: this.defaultHeaders,
     });
   }
 
   // --- New Methods Added for Expanded API Tests ---
-  
+
   /**
    * GET /reverse - Reverse Geocoding
    */
   async reverseGeocode(lat: number, lon: number): Promise<APIResponse> {
     return await this.request.get(`${this.osmBaseUrl}/reverse`, {
       headers: this.defaultHeaders,
-      params: { lat, lon, format: 'json' }
+      params: { lat, lon, format: 'json' },
     });
   }
 
@@ -135,7 +135,7 @@ export class LocationApiClient {
   async accessProtectedEndpointWithAuth(username: string, password: string): Promise<APIResponse> {
     const encoded = Buffer.from(`${username}:${password}`).toString('base64');
     return await this.request.get(`${this.authTestBaseUrl}/basic-auth`, {
-      headers: { ...this.defaultHeaders, 'Authorization': `Basic ${encoded}` }
+      headers: { ...this.defaultHeaders, Authorization: `Basic ${encoded}` },
     });
   }
 
@@ -145,7 +145,7 @@ export class LocationApiClient {
   async patchLocation(id: number, data: object): Promise<APIResponse> {
     return await this.request.patch(`${this.jsonplaceholderBaseUrl}/posts/${id}`, {
       headers: this.defaultHeaders,
-      data
+      data,
     });
   }
 
@@ -155,8 +155,7 @@ export class LocationApiClient {
   async getLocationsByQuery(params: Record<string, string | number>): Promise<APIResponse> {
     return await this.request.get(`${this.jsonplaceholderBaseUrl}/posts`, {
       headers: this.defaultHeaders,
-      params
+      params,
     });
   }
-
 }

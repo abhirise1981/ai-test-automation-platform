@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { LOCATORS } from '../config/uiConstants';
 import { testConfig } from '../config/testConfig';
@@ -27,7 +27,7 @@ export class CheckoutPage extends BasePage {
 
   async completeCheckoutFlow(): Promise<void> {
     // Tutorials Ninja has a 6-step accordion checkout.
-    
+
     // Step 2: Billing Details (Fill out new address form since new users don't have one)
     await this.page.locator(LOCATORS.CHECKOUT.BILLING_FIRSTNAME).waitFor({ state: 'visible' });
     await this.page.locator(LOCATORS.CHECKOUT.BILLING_FIRSTNAME).fill(testConfig.registration.firstName);
@@ -38,7 +38,7 @@ export class CheckoutPage extends BasePage {
     await this.page.locator(LOCATORS.CHECKOUT.BILLING_COUNTRY).selectOption({ label: testConfig.registration.country });
     await this.page.waitForTimeout(1000); // Wait for regions to load
     await this.page.locator(LOCATORS.CHECKOUT.BILLING_ZONE).selectOption({ label: testConfig.registration.state });
-    
+
     await this.billingDetailsContinueBtn.click();
 
     // Step 3: Delivery Details

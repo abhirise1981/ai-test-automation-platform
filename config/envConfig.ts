@@ -14,7 +14,8 @@ const defaultEnv = {
   baseUrl: 'https://tutorialsninja.com/demo/',
   geocodingBaseUrl: 'https://nominatim.openstreetmap.org',
   restMockBaseUrl: 'https://jsonplaceholder.typicode.com',
-  authTestBaseUrl: 'https://postman-echo.com'
+  authTestBaseUrl: 'https://postman-echo.com',
+  stripeApiBaseUrl: 'https://api.stripe.com/v1',
 };
 
 // 2. Environment-specific overrides (only specify what differs from defaultEnv)
@@ -30,20 +31,22 @@ export const environments: Record<Environment, Partial<typeof defaultEnv>> = {
   },
   prod: {
     // Uses all defaults
-  }
+  },
 };
 
 // 3. Resolve the final configuration using a priority merge:
 // Defaults < Environment Specific < Runtime Environment Variables
 const activeConfig = {
   ...defaultEnv,
-  ...environments[env]
+  ...environments[env],
 };
 
 export const environmentConfig = {
   environment: env,
-  baseUrl:          process.env.BASE_URL          || activeConfig.baseUrl,
+  baseUrl: process.env.BASE_URL || activeConfig.baseUrl,
   geocodingBaseUrl: process.env.GEOCODING_API_URL || activeConfig.geocodingBaseUrl,
-  restMockBaseUrl:  process.env.REST_MOCK_API_URL || activeConfig.restMockBaseUrl,
-  authTestBaseUrl:  process.env.AUTH_TEST_API_URL || activeConfig.authTestBaseUrl
+  restMockBaseUrl: process.env.REST_MOCK_API_URL || activeConfig.restMockBaseUrl,
+  authTestBaseUrl: process.env.AUTH_TEST_API_URL || activeConfig.authTestBaseUrl,
+  stripeApiBaseUrl: process.env.STRIPE_API_URL || activeConfig.stripeApiBaseUrl,
 };
+

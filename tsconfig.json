@@ -9,8 +9,20 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "types": ["node", "@playwright/test"]
+    "types": ["node", "@playwright/test", "mocha", "webdriverio", "@wdio/globals/types"],
+    "outDir": "./dist",
+    "rootDir": "."
   },
-  "include": ["tests/**/*.ts", "playwright.config.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "tests/**/*.ts",
+    "pages/**/*.ts",
+    "screens/**/*.ts",
+    "api/**/*.ts",
+    "config/**/*.ts",
+    "agents/**/*.ts",
+    "mcp-server/**/*.ts",
+    "playwright.config.ts",
+    "wdio.conf.ts"
+  ],
+  "exclude": ["node_modules", "dist", "target", "apps"]
 }

@@ -1,92 +1,122 @@
-# Toptal SDET Test Automation Project
+# AI-Powered Multi-Agent Test Automation Framework
 
-This repository contains a comprehensive test automation suite built for a screening assessment. It demonstrates UI Automation, REST API testing, and Load Testing using modern industry best practices.
+Transform the existing Playwright framework into an enterprise-grade, AI-driven multi-agent system that automatically reads Jira stories, generates BRDs, creates test scripts (Web, Mobile & GraphQL), self-heals broken tests, optimizes LLM tokens via **Distributed Redis Caching**, monitors agent telemetry via **LangSmith**, and executes on local & cloud — all orchestrated through an **MCP server**.
+
+---
+
+## High-Level Architecture
+
+```mermaid
+graph TB
+    subgraph "1. JIRA AGENT"
+        JA[Jira Client<br/>axios + jira.js] -->|Fetches User Story| JP[Story Parser<br/>Extracts AC, Priority, Type]
+    end
+
+    subgraph "2. PLANNER AGENT"
+        JP -->|Story JSON| PA[Planner Agent]
+        PA -->|Analyzes Story + ACs| BRD[BRD Generator<br/>Creates .md file]
+    end
+
+    subgraph "3. GENERATOR AGENT"
+        BRD -->|BRD .md file| GA[Generator Agent]
+        GA -->|Uses POM Templates| TS[Test Script Generator<br/>Creates .spec.ts files]
+        GA -->|Mobile Stories| MS[Mobile Test Generator<br/>Creates Appium .spec.ts]
+    end
+
+    subgraph "4. HEALER AGENT"
+        TS -->|Test Execution| HA[Healer Agent]
+        MS -->|Test Execution| HA
+        HA -->|Analyzes Failures| FIX[Auto-Fix Engine<br/>Locator Healing + Retry Logic]
+        FIX -->|Patched Scripts| TS
+        FIX -->|Patched Scripts| MS
+    end
+
+    subgraph "5. MCP SERVER"
+        MCP[MCP Orchestrator<br/>Express + SSE] -->|Tool: run_tests| EX[Execution Engine]
+        MCP -->|Tool: fetch_story| JA
+        MCP -->|Tool: generate_brd| PA
+        MCP -->|Tool: generate_tests| GA
+        MCP -->|Tool: heal_tests| HA
+        MCP -->|Tool: run_mobile| MOB[Mobile Executor]
+    end
+
+    subgraph "6. EXECUTION LAYER — WEB"
+        EX -->|Local| LOCAL[Playwright Local<br/>Chromium/Firefox/WebKit]
+        EX -->|Cloud| BS[BrowserStack Automate<br/>Cross-Browser Desktop]
+    end
+
+    subgraph "7. EXECUTION LAYER — MOBILE"
+        MOB -->|Emulated| EMU[Playwright Mobile Emulation<br/>iPhone, Pixel, Galaxy]
+        MOB -->|Native/Hybrid| APPIUM[Appium Server<br/>Android + iOS]
+        APPIUM -->|Cloud| BSAPP[BrowserStack App Automate<br/>Real Devices]
+        APPIUM -->|Cloud| AWSDF[AWS Device Farm<br/>Real Device Grid]
+    end
+
+    subgraph "8. REPORTING"
+        LOCAL --> RPT[Monocart Reporter]
+        BS --> RPT
+        EMU --> RPT
+        APPIUM --> RPT
+        RPT --> JIRA_UPDATE[Jira Ticket Update<br/>Pass/Fail + Attachments]
+    end
+```
 
 ---
 
 ## Technical Stack & Tools
 - **UI Automation**: Playwright + TypeScript + Page Object Model (POM)
+- **Mobile Native Automation**: WebdriverIO + Appium + Screen Object Model (SOM)
 - **API Automation**: Playwright APIRequestContext
+- **AI Agents**: OpenAI GPT-4o / Google Gemini via MCP
+- **Orchestration**: Model Context Protocol (MCP) Server
 - **Load Testing**: Gatling (TypeScript SDK)
-- **Reporting**: Monocart Reporter & Native Gatling HTML Reports
-- **CI/CD**: GitLab CI
-
----
-
-## Project Structure
-```text
-toptal-project-assessment/
-├── .gitlab-ci.yml           # GitLab CI/CD pipeline configuration
-├── docs/
-│   └── test_cases.md        # Full test cases in plain English (for all audiences)
-├── BUG_REPORT.md            # Formal Jira-style bug tickets from testing
-├── LOAD_TEST_REPORT.md      # Detailed analysis of Gatling load test results
-├── config/
-│   └── testConfig.ts        # Single source of truth for ALL environment config
-│                            # (UI baseURL, API endpoints, test data — all env-driven)
-├── api/                     # API Object Model (Service Client Layer)
-│   └── LocationApiClient.ts # Encapsulates all HTTP calls — tests never call request.get() directly
-├── pages/                   # UI Page Object Models (POM)
-│   ├── BasePage.ts          # Shared navigateTo(), getPageTitle() methods
-│   ├── HomePage.ts          # Products navigation, search, add-to-cart
-│   ├── LoginPage.ts         # User signup, registration form, login
-│   ├── CartPage.ts          # Cart item count and name validation
-│   └── CheckoutPage.ts      # Order comment, payment details, order confirmation
-├── tests/                   # Playwright Test Specs (assertions only, no raw HTTP/locator calls)
-│   ├── api/
-│   │   └── location.spec.ts # 7 REST API tests (GET 200, GET 404, GET 401, POST 201, PUT 200, DELETE 200, PUT 500)
-│   └── ui/
-│       └── ecommerce.spec.ts# 6 UI tests (Registration, Negative Login, 3x Search, Checkout)
-├── load-tests/
-│   └── ecommerce.gatling.ts # Gatling load test — 1000 users / 15 seconds
-├── package.json             # Project dependencies
-├── playwright.config.ts     # Playwright config — baseURL sourced from testConfig
-└── tsconfig.json            # TypeScript compiler configuration
-```
-
----
-
-## Setup & Installation
-
-### Prerequisites
-- Node.js (version 18 or higher)
-
-### Install Dependencies
-Run the following commands in the project root folder to install all Node modules and Playwright browsers:
-```bash
-npm ci
-npx playwright install
-```
+- **Cloud Execution**: BrowserStack (Web/App Automate) & AWS Device Farm
+- **Reporting**: Monocart Reporter & Healing Reports
 
 ---
 
 ## Execution Guide
 
-### 1. Run UI & API Automation Tests
-To run all e-commerce flows (User Registration, Product Search, Cart Verification, Payment & Checkout) and REST API tests:
+### 1. Run Pipeline Orhestrator (End-to-End)
+Runs the complete flow: Jira → Planner → Generator → Execute → Heal
 ```bash
-npx playwright test
+npx ts-node agents/pipeline.ts --issue PROJ-123
+```
+Add `--dry-run` to see what would happen without actually executing tests.
+
+### 2. Start the MCP Server
+Allows any MCP-compatible AI client to orchestrate the pipeline via tools.
+```bash
+npm run mcp:start
 ```
 
-After execution, view the beautiful Monocart rich HTML report (which includes traces and video recordings on failure):
+### 3. Run Web Tests (Playwright)
 ```bash
-npx monocart show-report test-results/report.html
+npm run test                   # Local Chromium
+npm run test:mobile-web        # Playwright mobile emulation
+npm run test:browserstack      # BrowserStack cross-browser
+```
+
+### 4. Run Mobile Native Tests (Appium)
+```bash
+npm run appium:start           # Start Appium server first
+npm run test:mobile:android    # Local Android emulator
+npm run test:mobile:ios        # Local iOS simulator
+npm run test:mobile:browserstack # BrowserStack App Automate
 ```
 
 ---
 
-### 2. Run Load Tests
-To execute the Gatling load test plan simulating a DDoS event of 1,000 users ramping up in 15 seconds against the target server:
-```bash
-npx gatling run --typescript --sources-folder load-tests
-```
-*(Note: As documented in `LOAD_TEST_REPORT.md`, this test is expected to yield a non-zero exit code because the server will crash under load, intentionally breaching the CI/CD SLA assertions).*
+## Configuration & Secrets
+Copy `.env.example` to `.env` and fill in your values for Jira, OpenAI/Gemini, BrowserStack, and AWS.
 
-After execution, the Gatling HTML report will be generated. The exact path to open it will be printed at the bottom of the terminal output (e.g. `open target/gatling/.../index.html`).
+> **Note:** Do NOT commit your `.env` file!
 
 ---
 
-## Test Scenario Documentation
-- For a detailed breakdown of test cases, refer to `docs/test_cases.md`.
-- For details on bugs found during development, refer to `BUG_REPORT.md`.
-- For the theoretical analysis of the performance test, refer to `LOAD_TEST_REPORT.md`.
+## Old Setup Notes
+
+- **UI Automation**: Playwright tests are in `tests/ui/`
+- **API Automation**: Playwright API tests are in `tests/api/`
+- **Load Testing**: Gatling load tests are in `load-tests/`
+- **Legacy Run**: `npx playwright test` still works!

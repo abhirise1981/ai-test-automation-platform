@@ -1,6 +1,6 @@
-import { Page, Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { ROUTES, LOCATORS } from '../config/uiConstants';
+import { LOCATORS, ROUTES } from '../config/uiConstants';
 import { testConfig } from '../config/testConfig';
 
 export class LoginPage extends BasePage {
@@ -42,11 +42,7 @@ export class LoginPage extends BasePage {
     await this.loginButton.click();
   }
 
-  async signUpAndRegister(
-    name: string,
-    email: string,
-    password: string
-  ): Promise<void> {
+  async signUpAndRegister(name: string, email: string, password: string): Promise<void> {
     // OpenCart requires more fields for registration. We'll derive them.
     const nameParts = name.split(' ');
     const firstName = nameParts[0] || testConfig.registration.firstName;
@@ -58,11 +54,11 @@ export class LoginPage extends BasePage {
     await this.telephoneInput.fill(testConfig.registration.mobile);
     await this.passwordInput.fill(password);
     await this.confirmPasswordInput.fill(password);
-    
+
     // Playwright's check() sometimes fails on custom styled checkboxes if they rely on JS click events
     await this.agreeTermsCheckbox.click();
     await this.continueButton.click();
-    
+
     // Wait for the success page to load explicitly instead of networkidle
     await this.page.waitForURL(ROUTES.ACCOUNT_SUCCESS_REGEX, { timeout: 15000 });
   }

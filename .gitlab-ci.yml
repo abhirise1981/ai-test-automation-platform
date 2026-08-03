@@ -1,6 +1,7 @@
 image: mcr.microsoft.com/playwright:v1.49.1-jammy
 
 stages:
+  - build
   - test
   - performance
 
@@ -12,6 +13,28 @@ install_dependencies:
   stage: .pre
   script:
     - npm ci
+
+ai_pipeline_execution:
+  stage: build
+  script:
+    - npm ci
+    - echo "Triggering AI Multi-Agent Pipeline for Jira Issue..."
+    # In a real environment, the ISSUE_KEY would be passed dynamically by a webhook or trigger variable
+    - npx ts-node agents/pipeline.ts --issue ${ISSUE_KEY:-PROJ-123}
+  artifacts:
+    when: always
+    paths:
+      - agents/planner/brd-output/
+      - tests/ui/
+      - tests/mobile/
+      - test-results/
+    expire_in: 7 days
+  rules:
+    # This rule ensures the AI pipeline only runs if we pass an ISSUE_KEY, or manually.
+    # Otherwise, regular CI/CD runs standard regression tests in the next stage.
+    - if: $ISSUE_KEY
+    - when: manual
+      allow_failure: true
 
 playwright_tests:
   stage: test
@@ -29,7 +52,7 @@ gatling_load_test:
   stage: performance
   script:
     - npm ci
-    - npx gatling run --typescript --sources-folder load-tests || echo "Gatling test expected to fail due to high load testing limits (Code 2)"
+    - npx gatling run --typescript --sources-folder load-tests --simulation ecommerce || echo "Gatling test expected to fail due to high load testing limits (Code 2)"
   artifacts:
     when: always
     paths:

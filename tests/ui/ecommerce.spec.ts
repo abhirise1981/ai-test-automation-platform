@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { HomePage } from '../../pages/HomePage';
 import { LoginPage } from '../../pages/LoginPage';
 import { CartPage } from '../../pages/CartPage';
@@ -18,7 +18,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     loginPage = new LoginPage(page);
     cartPage = new CartPage(page);
     checkoutPage = new CheckoutPage(page);
-    
+
     // Generate a strictly unique email combining timestamp, worker index, and a random string.
     const randomSuffix = Math.random().toString(36).substring(2, 7);
     dynamicUserEmail = `toptal_user_${Date.now()}_w${testInfo.workerIndex}_${randomSuffix}@gmail.com`;
@@ -29,12 +29,8 @@ test.describe('E-Commerce Critical Flow Tests', () => {
 
   test('TC-01: User Registration and Login Flow', async () => {
     await homePage.navigateToRegister();
-    
-    await loginPage.signUpAndRegister(
-      testConfig.username,
-      dynamicUserEmail,
-      testConfig.password
-    );
+
+    await loginPage.signUpAndRegister(testConfig.username, dynamicUserEmail, testConfig.password);
 
     // Verify logged in state
     expect(await homePage.isLoggedIn()).toBe(true);
@@ -50,7 +46,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
 
   test('TC-02: Negative Login Flow with Invalid Credentials', async ({ page }) => {
     await homePage.navigateToLogin();
-    
+
     // Attempt login with invalid credentials
     await loginPage.login(testConfig.negative.invalidEmail, testConfig.negative.invalidPassword);
 
@@ -63,7 +59,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     test(`TC-03, TC-04, TC-05: Product Search for criteria: ${criteria}`, async () => {
       await homePage.navigateToProducts();
       await homePage.searchProduct(criteria);
-      
+
       const resultsCount = await homePage.getSearchedProductsCount();
       expect(resultsCount).toBeGreaterThan(0);
       console.log(`Search criteria "${criteria}" returned ${resultsCount} results.`);
@@ -73,11 +69,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
   test('TC-06: Add Product to Cart and Complete Checkout Flow', async () => {
     // 1. Signup / Register first to proceed to checkout smoothly later
     await homePage.navigateToRegister();
-    await loginPage.signUpAndRegister(
-      testConfig.username,
-      dynamicUserEmail,
-      testConfig.password
-    );
+    await loginPage.signUpAndRegister(testConfig.username, dynamicUserEmail, testConfig.password);
 
     // 2. Search for a product (First criteria)
     await homePage.navigateToProducts();
@@ -122,11 +114,11 @@ test.describe('E-Commerce Critical Flow Tests', () => {
 
   test('TC-08: Navigate Categories and Verify Products', async ({ page }) => {
     await homePage.navigateTo('/');
-    
+
     // Instead of hover, navigate directly to laptops & notebooks category via URL
     // since the nav bar can be finicky on different viewports in headless mode.
     await page.goto(ROUTES.CATEGORY_LAPTOPS);
-    
+
     // Verify we arrived at category page and products exist
     await expect(page).toHaveURL(new RegExp(ROUTES.CATEGORY_LAPTOPS.replace('?', '\\?')));
     const products = page.locator(LOCATORS.HOME.PRODUCT_ITEMS);
@@ -135,13 +127,13 @@ test.describe('E-Commerce Critical Flow Tests', () => {
 
   test('TC-09: Contact Us Form Submission', async ({ page }) => {
     await page.goto(ROUTES.CONTACT);
-    
+
     await page.locator(LOCATORS.CONTACT.NAME_INPUT).fill(testConfig.username);
     await page.locator(LOCATORS.CONTACT.EMAIL_INPUT).fill(testConfig.negative.contactEmail);
     await page.locator(LOCATORS.CONTACT.ENQUIRY_INPUT).fill(testConfig.negative.contactEnquiry);
-    
+
     await page.locator(LOCATORS.CONTACT.SUBMIT_BTN).click();
-    
+
     // OpenCart Contact success redirects to a success page
     await page.waitForURL(new RegExp(ROUTES.CONTACT_SUCCESS.replace('?', '\\?')));
     await expect(page.locator(LOCATORS.HOME.CONTENT_HEADING)).toHaveText('Contact Us');
@@ -150,19 +142,15 @@ test.describe('E-Commerce Critical Flow Tests', () => {
 
   test('TC-10: Add Product to Wishlist (Requires Login)', async ({ page }) => {
     await homePage.navigateToRegister();
-    await loginPage.signUpAndRegister(
-      testConfig.username,
-      dynamicUserEmail,
-      testConfig.password
-    );
+    await loginPage.signUpAndRegister(testConfig.username, dynamicUserEmail, testConfig.password);
 
     // Search and add to wishlist
     await homePage.navigateToProducts();
     await homePage.searchProduct(testConfig.searchCriteria[1]);
-    
+
     // The wishlist button has an onclick containing 'wishlist.add'
     await page.locator(LOCATORS.WISHLIST.ADD_BTN).first().click();
-    
+
     // Wait for success alert overlay
     const successAlert = page.locator(LOCATORS.HOME.SUCCESS_ALERT);
     await expect(successAlert).toBeVisible();
@@ -182,12 +170,12 @@ test.describe('E-Commerce Critical Flow Tests', () => {
 
   test('TC-12: [Negative] Checkout with Empty Cart', async ({ page }) => {
     await homePage.navigateToCart();
-    
+
     // Attempting to proceed to checkout when cart is empty
     // Often there's no checkout button, or clicking it redirects to cart.
     // Let's explicitly try to navigate to checkout via URL
     await page.goto(ROUTES.CHECKOUT);
-    
+
     // It should redirect back to cart if empty
     await expect(page).toHaveURL(new RegExp(ROUTES.CART.replace('?', '\\?')));
     const msg = page.locator(LOCATORS.HOME.CONTENT_PARAGRAPH).first();
@@ -200,11 +188,11 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     // by a previous test run on this environment.
     const existingEmail = 'existing_' + Date.now() + '@example.com';
     await loginPage.signUpAndRegister(testConfig.username, existingEmail, testConfig.password);
-    
+
     // Register AGAIN with same email
     await homePage.navigateToLogout();
     await homePage.navigateToRegister();
-    
+
     // Fill form manually so we don't wait for success URL
     await loginPage.firstNameInput.fill(testConfig.registration.firstName);
     await loginPage.lastNameInput.fill(testConfig.registration.lastName);
@@ -214,7 +202,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await loginPage.confirmPasswordInput.fill(testConfig.password);
     await loginPage.agreeTermsCheckbox.click();
     await loginPage.continueButton.click();
-    
+
     const alert = page.locator(LOCATORS.HOME.ALERT_DANGER);
     await expect(alert).toContainText('Warning: E-Mail Address is already registered!');
   });
@@ -229,7 +217,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await loginPage.confirmPasswordInput.fill(testConfig.negative.mismatchedPassword); // Mismatch
     await loginPage.agreeTermsCheckbox.click();
     await loginPage.continueButton.click();
-    
+
     const errorMsg = page.locator(LOCATORS.HOME.TEXT_DANGER).first();
     await expect(errorMsg).toContainText('Password confirmation does not match password!');
   });
@@ -237,12 +225,12 @@ test.describe('E-Commerce Critical Flow Tests', () => {
   test('TC-15: [Negative] Submit Contact Form Empty', async ({ page }) => {
     await page.goto(ROUTES.CONTACT);
     await page.locator(LOCATORS.CONTACT.SUBMIT_BTN).click();
-    
+
     // Verify required field errors appear
     const nameError = page.locator(LOCATORS.HOME.TEXT_DANGER).nth(0);
     const emailError = page.locator(LOCATORS.HOME.TEXT_DANGER).nth(1);
     const enquiryError = page.locator(LOCATORS.HOME.TEXT_DANGER).nth(2);
-    
+
     await expect(nameError).toBeVisible();
     await expect(emailError).toBeVisible();
     await expect(enquiryError).toBeVisible();
@@ -254,13 +242,13 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await homePage.searchProduct(testConfig.negative.outOfStockProduct);
     await homePage.addFirstSearchedProductToCart();
     await homePage.navigateToCart();
-    
+
     const errorAlert = page.locator(LOCATORS.HOME.ALERT_DANGER);
     await expect(errorAlert).toContainText('Products marked with *** are not available');
-    
+
     // Attempt to checkout
     await cartPage.proceedToCheckout();
-    
+
     // Should block checkout and return to cart
     await expect(page).toHaveURL(new RegExp(ROUTES.CART.replace('?', '\\?')));
   });
@@ -268,7 +256,7 @@ test.describe('E-Commerce Critical Flow Tests', () => {
   test('TC-17: [Corner Case] Login with Empty Credentials', async ({ page }) => {
     await homePage.navigateToLogin();
     await loginPage.loginButton.click();
-    
+
     const errorAlert = page.locator(LOCATORS.HOME.ALERT_DANGER);
     await expect(errorAlert).toContainText('Warning: No match for E-Mail Address and/or Password.');
   });
@@ -277,11 +265,11 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     await homePage.navigateToRegister();
     const randomEmail = 'newsletter_' + Date.now() + '@example.com';
     await loginPage.signUpAndRegister(testConfig.username, randomEmail, testConfig.password);
-    
+
     await page.goto(ROUTES.NEWSLETTER);
     await page.locator(LOCATORS.ACCOUNT.NEWSLETTER_YES).click(); // Yes
     await page.locator(LOCATORS.ACCOUNT.SUBMIT_BTN).click(); // Continue
-    
+
     const successAlert = page.locator(LOCATORS.HOME.SUCCESS_ALERT);
     await expect(successAlert).toContainText('Success: Your newsletter subscription has been successfully updated!');
   });
@@ -289,10 +277,10 @@ test.describe('E-Commerce Critical Flow Tests', () => {
   test('TC-19: [Corner Case] Add Product to Compare', async ({ page }) => {
     // Navigate explicitly to the demo home page, because beforeEach '/' goes to the root domain!
     await homePage.navigateTo(ROUTES.HOME);
-    
+
     // 1st button is 'Add to Cart', 2nd is 'Wish List', 3rd is 'Compare this Product'
     await page.locator(LOCATORS.HOME.COMPARE_BTN).first().click({ force: true });
-    
+
     // Wait for the success alert to appear
     const successMsg = page.locator(LOCATORS.HOME.SUCCESS_ALERT);
     await expect(successMsg).toContainText('Success: You have added');
@@ -301,10 +289,10 @@ test.describe('E-Commerce Critical Flow Tests', () => {
   test('TC-20: [Corner Case] Navigate to Brands (Manufacturers) Page', async ({ page }) => {
     // Navigate explicitly to the demo home page
     await homePage.navigateTo(ROUTES.HOME);
-    
+
     // Click the Brands link in the footer
     await page.locator(LOCATORS.HOME.BRANDS_LINK).click({ force: true });
-    
+
     // Verify we navigated to the correct page
     await expect(page.locator(LOCATORS.HOME.CONTENT_HEADING)).toHaveText('Find Your Favorite Brand');
   });

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { LocationApiClient } from '../../api/LocationApiClient';
 import { testConfig } from '../../config/testConfig';
 
@@ -31,7 +31,6 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
   // Tests the Nominatim OpenStreetMap geocoding service.
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('GET /search — Geocoding Endpoint', () => {
-
     test('API-01: Returns 200 OK and valid coordinate schema for a known city (London)', async () => {
       const response = await apiClient.searchLocation('London');
 
@@ -79,7 +78,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
 
         console.log(`✓ ${city.name}: ${location.display_name}`);
       });
-    }
+    });
 
     test('API-05: Returns 404 Not Found for an invalid/non-existent endpoint path', async () => {
       const response = await apiClient.searchInvalidEndpoint();
@@ -87,28 +86,24 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       expect(response.status()).toBe(404);
       console.log(`✓ Invalid endpoint correctly returned: ${response.status()}`);
     });
-
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 2: Authentication / Security Tests
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('Security — Authentication Tests', () => {
-
     test('API-06: Returns 401 Unauthorized when no credentials are provided to a protected endpoint', async () => {
       const response = await apiClient.accessProtectedEndpointWithoutAuth();
 
       expect(response.status()).toBe(401);
       console.log(`✓ Unauthorized access correctly returned: ${response.status()}`);
     });
-
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 3: GET — Retrieve Location Resources
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('GET /posts — Retrieve Location Resources', () => {
-
     test('API-07: Returns 200 OK and a non-empty list when retrieving all locations', async () => {
       const response = await apiClient.getAllLocations();
 
@@ -132,14 +127,12 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       expect(body).toHaveProperty('userId');
       console.log(`✓ Retrieved location ID 1: "${body.title}"`);
     });
-
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 4: POST — Create Location Resources
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('POST /posts — Create Location Resource', () => {
-
     test('API-09: Returns 201 Created with correct response body for valid location payload', async () => {
       const response = await apiClient.createLocation(testConfig.api.sampleLocation);
 
@@ -171,14 +164,12 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       expect(body).toHaveProperty('userId');
       console.log(`✓ Response schema validated: all required fields present.`);
     });
-
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 5: PUT — Update Location Resources
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('PUT /posts/:id — Update Location Resource', () => {
-
     test('API-11: Returns 200 OK and reflects updated values for an existing resource', async () => {
       const response = await apiClient.updateLocation(1, testConfig.api.updatedLocation);
 
@@ -200,30 +191,24 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       expect(response.status()).toBe(500);
       console.log(`✓ [BUG confirmed] Non-existent resource update returned: ${response.status()} (expected 404)`);
     });
-
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 6: DELETE — Remove Location Resources
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('DELETE /posts/:id — Delete Location Resource', () => {
-
     test('API-13: Returns 200 OK when deleting an existing location resource', async () => {
       const response = await apiClient.deleteLocation(1);
 
       expect(response.status()).toBe(200);
       console.log(`✓ Location deleted. Status: ${response.status()}`);
     });
-
   });
-
-
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 7: Advanced Geocoding & Corner Cases (NEW)
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('Advanced Geocoding & Corner Cases', () => {
-    
     test('API-14: Returns empty array for empty search query', async () => {
       const response = await apiClient.searchLocation('');
       expect(response.status()).toBe(200);
@@ -241,7 +226,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
     });
 
     test('API-16: Returns 200 OK for valid reverse geocoding', async () => {
-      const response = await apiClient.reverseGeocode('51.5074', '-0.1278'); // London
+      const response = await apiClient.reverseGeocode(51.5074, -0.1278); // London
       expect(response.status()).toBe(200);
       const body = await response.json();
       expect(body).toHaveProperty('address');
@@ -250,20 +235,18 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
 
     test('API-17: [BUG] Returns 200 OK instead of 400 Bad Request for invalid coordinates in reverse geocode', async () => {
       // Nominatim API returns a 200 OK with an error message instead of 400 Bad Request
-      const response = await apiClient.reverseGeocode('999', '999'); 
+      const response = await apiClient.reverseGeocode(999, 999);
       expect(response.status()).toBe(200);
       const body = await response.json();
       expect(body).toHaveProperty('error');
       expect(body.error).toBe('Unable to geocode');
     });
-
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 8: Advanced Authentication Permutations (NEW)
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('Advanced Authentication', () => {
-
     test('API-18: Returns 200 OK with valid Basic Auth credentials', async () => {
       const response = await apiClient.accessProtectedEndpointWithAuth('postman', 'password');
       expect(response.status()).toBe(200);
@@ -275,14 +258,12 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       const response = await apiClient.accessProtectedEndpointWithAuth('wronguser', 'wrongpass');
       expect(response.status()).toBe(401);
     });
-
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SECTION 9: Advanced CRUD & REST Compliance (NEW)
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('Advanced CRUD & REST Permutations', () => {
-
     test('API-20: Returns 404 Not Found for non-existent resource GET', async () => {
       const response = await apiClient.getLocationById(999999);
       expect(response.status()).toBe(404);
@@ -305,7 +286,7 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       const body = await response.json();
       expect(body.title).toBe(partialData.title);
       // Original fields should remain (JSONPlaceholder mocks this)
-      expect(body).toHaveProperty('userId'); 
+      expect(body).toHaveProperty('userId');
     });
 
     test('API-23: Handles POST with extra unknown fields gracefully (ignores them)', async () => {
@@ -316,7 +297,5 @@ test.describe('Location & Geocoding API Tests — API Object Model', () => {
       expect(body.title).toBe(testConfig.api.sampleLocation.title);
       // JSONPlaceholder usually echoes it back, so we just verify it didn't crash (201 Created)
     });
-
   });
-
 });

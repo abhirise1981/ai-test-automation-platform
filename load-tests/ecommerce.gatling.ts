@@ -1,6 +1,6 @@
-import { simulation, scenario, rampUsers, global } from "@gatling.io/core";
-import { http, status } from "@gatling.io/http";
-import { TARGET_BASE_URL, HTTP_HEADERS, ACTIVE_PROFILE } from "./load-test.config";
+import { global, rampUsers, scenario, simulation } from '@gatling.io/core';
+import { http, status } from '@gatling.io/http';
+import { ACTIVE_PROFILE, HTTP_HEADERS, TARGET_BASE_URL } from './load-test.config';
 
 /**
  * ecommerce.gatling.ts — Simulation Execution File
@@ -26,24 +26,17 @@ const httpProtocol = http
   .userAgentHeader(HTTP_HEADERS.userAgent);
 
 // ── Scenario ──────────────────────────────────────────────────────────────────
-const homepageScenario = scenario(`Toptal Load Test — ${ACTIVE_PROFILE.label}`)
-  .exec(
-    http('GET Homepage')
-      .get('/')
-      .check(status().is(200))
-  );
+const homepageScenario = scenario(`Toptal Load Test — ${ACTIVE_PROFILE.label}`).exec(
+  http('GET Homepage').get('/').check(status().is(200)),
+);
 
 // ── Simulation Setup ──────────────────────────────────────────────────────────
 export default simulation((setUp) => {
-  setUp(
-    homepageScenario.injectOpen(
-      rampUsers(ACTIVE_PROFILE.users).during(ACTIVE_PROFILE.durationSeconds)
-    )
-  )
-  .protocols(httpProtocol)
-  // CI/CD gates — pipeline fails if either SLA is breached
-  .assertions(
-    global().successfulRequests().percent().gte(ACTIVE_PROFILE.successRatePct),
-    global().responseTime().max().lt(ACTIVE_PROFILE.maxResponseMs)
-  );
+  setUp(homepageScenario.injectOpen(rampUsers(ACTIVE_PROFILE.users).during(ACTIVE_PROFILE.durationSeconds)))
+    .protocols(httpProtocol)
+    // CI/CD gates — pipeline fails if either SLA is breached
+    .assertions(
+      global().successfulRequests().percent().gte(ACTIVE_PROFILE.successRatePct),
+      global().responseTime().max().lt(ACTIVE_PROFILE.maxResponseMs),
+    );
 });

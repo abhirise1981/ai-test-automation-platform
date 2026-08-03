@@ -1,4 +1,5 @@
-import { Page, Locator } from '@playwright/test';
+import type { Page} from '@playwright/test';
+import { Locator } from '@playwright/test';
 
 /**
  * BasePage — Foundation class for all Page Object Models.

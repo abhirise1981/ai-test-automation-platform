@@ -1,6 +1,7 @@
-import { Page, Locator, expect } from '@playwright/test';
+import type { Locator, Page} from '@playwright/test';
+import { expect } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { ROUTES, LOCATORS } from '../config/uiConstants';
+import { LOCATORS, ROUTES } from '../config/uiConstants';
 
 export class HomePage extends BasePage {
   private readonly myAccountDropdown: Locator;
@@ -16,7 +17,7 @@ export class HomePage extends BasePage {
     this.myAccountDropdown = this.page.locator(LOCATORS.NAV.MY_ACCOUNT);
     this.loginLink = this.page.getByRole('link', { name: LOCATORS.NAV.LOGIN_LINK_TEXT }).first();
     this.logoutLink = this.page.getByRole('link', { name: LOCATORS.NAV.LOGOUT_LINK_TEXT, exact: true }).first();
-    
+
     this.searchInput = this.page.locator(LOCATORS.HOME.SEARCH_INPUT);
     this.searchButton = this.page.locator(LOCATORS.HOME.SEARCH_BUTTON);
     this.productItems = this.page.locator(LOCATORS.HOME.PRODUCT_ITEMS);
@@ -72,12 +73,12 @@ export class HomePage extends BasePage {
     const successAlert = this.page.locator(LOCATORS.HOME.SUCCESS_ALERT);
 
     await firstProductCartBtn.click();
-    
+
     // Playwright Best Practice: Use Promise.race for branching state instead of try/catch timeouts.
     // This immediately resolves as soon as EITHER the alert appears OR the URL changes, eliminating artificial delays.
     const outcome = await Promise.race([
       this.page.waitForURL(ROUTES.PRODUCT_DETAILS_REGEX, { timeout: 15000 }).then(() => 'redirect'),
-      successAlert.waitFor({ state: 'visible', timeout: 15000 }).then(() => 'success')
+      successAlert.waitFor({ state: 'visible', timeout: 15000 }).then(() => 'success'),
     ]);
 
     if (outcome === 'redirect') {

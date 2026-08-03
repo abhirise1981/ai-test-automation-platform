@@ -1,5 +1,12 @@
 node_modules/
-playwright-report/
+.env
 test-results/
 target/
+apps/*.apk
+apps/*.ipa
+apps/*.aab
+agents/planner/brd-output/*.md
+agents/healer/healing-reports/
+playwright-report/
 .DS_Store
+.llm-cache/
