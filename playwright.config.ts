@@ -60,7 +60,7 @@ export default defineConfig({
     headless: true,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'on',
+    video: 'retain-on-failure',
     testIdAttribute: 'data-qa',
   },
   projects: projectsConfig,
