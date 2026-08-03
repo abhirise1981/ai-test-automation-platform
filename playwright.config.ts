@@ -44,6 +44,7 @@ export default defineConfig({
   expect: { timeout: 10000 },
   reporter: [
     ['list'],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['json', { outputFile: 'test-results/results.json' }],
     [
       'monocart-reporter',
