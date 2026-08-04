@@ -39,8 +39,8 @@ if (target === 'mobile-web') {
 export default defineConfig({
   testDir: './tests',
   testIgnore: '**/mobile/**',
-  retries: process.env.CI ? 2 : 0,
-  timeout: 60000,
+  retries: process.env.CI ? 1 : 0,
+  timeout: 30000,
   expect: { timeout: 10000 },
   reporter: [
     ['list'],
@@ -54,7 +54,7 @@ export default defineConfig({
       },
     ],
   ],
-  workers: process.env.CI ? 2 : 4,
+  workers: process.env.CI ? 4 : 4,
   use: {
     baseURL: environmentConfig.baseUrl,
     headless: true,
