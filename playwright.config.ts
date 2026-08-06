@@ -54,7 +54,7 @@ export default defineConfig({
       },
     ],
   ],
-  workers: process.env.CI ? 4 : 4,
+  workers: 4,
   use: {
     baseURL: environmentConfig.baseUrl,
     headless: true,

@@ -6,8 +6,10 @@
 [![Playwright](https://img.shields.io/badge/Playwright-v1.49+-red.svg)](https://playwright.dev/)
 [![Appium](https://img.shields.io/badge/Appium-WDIO-purple.svg)](https://appium.io/)
 [![Gatling](https://img.shields.io/badge/Gatling-TypeScript%20SDK-orange.svg)](https://gatling.io/)
+[![Axe-Core](https://img.shields.io/badge/Axe--Core-WCAG%202.1%20AA-teal.svg)](https://www.deque.com/axe/)
+[![pgvector](https://img.shields.io/badge/pgvector-Embeddings-blueviolet.svg)](https://github.com/pgvector/pgvector)
 
-A state-of-the-art, enterprise-grade test automation platform unifying **Web UI**, **Native Mobile (iOS/Android)**, **REST/GraphQL APIs**, **Stripe Billing & Webhook Cryptographic Security**, **High-Concurrency Load Testing**, and an **Autonomous Multi-Agent AI Layer** with self-healing locators.
+A state-of-the-art, enterprise-grade test automation platform unifying **Web UI**, **Native Mobile (iOS/Android)**, **REST/GraphQL APIs**, **Stripe Billing & Webhook Cryptographic Security**, **High-Concurrency Load Testing**, **WCAG 2.1 AA Accessibility Compliance**, **Vector Database Embeddings & NL-to-SQL (RAG)**, and an **Autonomous Multi-Agent AI Layer** with self-healing locators.
 
 👉 **[📊 View Live Interactive Test Dashboard](https://abhirise1981.github.io/ai-test-automation-platform/)**
 
@@ -53,14 +55,22 @@ graph TB
         EX --> LOCAL[Playwright Web E2E<br/>Chromium / WebKit / Firefox]
         EX --> API[REST & GraphQL API<br/>Nominatim, Countries API]
         EX --> STRIPE[Stripe Billing & Cryptography<br/>HMAC-SHA256 Webhook Engine]
+        EX --> A11Y[Accessibility Engine<br/>Axe-Core WCAG 2.1 AA]
         MOB --> APPIUM[Appium & WebdriverIO<br/>iOS Simulator / Android Emulator]
         MOB --> BS[BrowserStack Cloud<br/>Real iOS & Android Devices]
     end
 
-    subgraph "7. REPORTING & ANALYTICS"
+    subgraph "7. VECTOR DB & NL-to-SQL (RAG)"
+        VDB[(Vector Store<br/>pgvector / Embeddings)] --> SIM[Cosine Similarity<br/>Schema Retrieval]
+        SIM --> NL2SQL[NL-to-SQL Agent<br/>Natural Language → SQL]
+        NL2SQL --> GUARD[SQL Safety Guardrails<br/>Injection Prevention]
+    end
+
+    subgraph "8. REPORTING & ANALYTICS"
         LOCAL --> RPT[Playwright HTML & Monocart Reports]
         API --> RPT
         STRIPE --> RPT
+        A11Y --> RPT
         RPT --> GHPAGES[Live GitHub Pages Deployment]
     end
 ```
@@ -77,7 +87,9 @@ graph TB
 | 📱 **Mobile-Web** | Playwright Device Descriptors | Mobile viewport emulation (iPhone 14, Pixel 7) testing responsive hamburger navigation and touch tap targets. |
 | 🔌 **REST & GraphQL** | Playwright APIRequestContext, Service Object Model | Full CRUD assertions (GET, POST, PUT, PATCH, DELETE), Basic Auth security boundaries, reverse geocoding, and GraphQL query resolution. |
 | ⚡ **Performance** | Gatling TypeScript SDK, P.S.I.A. Architecture | Concurrency load tests, token correlation, cookie header management, and response time SLA assertions. |
-| 🤖 **AI Self-Healing** | LangChain, LLM Cache, AST Repair | Autonomous test generation from Jira BRDs + self-healing locator engine that heals broken UI selectors at runtime. |
+| ♿ **Accessibility (a11y)** | Axe-Core, WCAG 2.1 AA, Section 508 | Automated WCAG compliance auditing, keyboard navigation verification (Tab focus order), 4.5:1 color contrast enforcement, 48×48px touch target validation, and component-scoped modal scanning with third-party widget exclusion. |
+| 🧠 **Vector DB & NL-to-SQL** | Embeddings, Cosine Similarity, pgvector, RAG | High-dimensional vector embeddings for semantic schema retrieval (Recall@K), NL-to-SQL query generation with SQL injection guardrails, and intelligent test deduplication via cosine similarity. |
+| 🤖 **AI Self-Healing** | LangChain, LLM Cache, AST Repair | Autonomous test generation from Jira BRDs + self-healing locator engine that heals broken UI selectors at runtime via vector similarity matching. |
 
 ---
 
@@ -143,11 +155,62 @@ npm run mcp:start
 
 ---
 
+## ♿ Accessibility Testing (WCAG 2.1 AA)
+
+The framework includes a purpose-built **A11yAuditor** engine (`utils/A11yAuditor.ts`) powered by **Axe-Core** for automated WCAG 2.1 AA compliance:
+
+| Capability | WCAG Standard | Implementation |
+| :--- | :--- | :--- |
+| **Full Page Auditing** | WCAG 2.0/2.1 Level A & AA, Section 508 | Tag-based Axe-Core rulesets with severity gating |
+| **Keyboard Navigation** | WCAG 2.1.1 & 2.4.7 | Sequential Tab focus order assertions |
+| **Color Contrast** | WCAG 1.4.3 | ≥ 4.5:1 ratio enforcement for normal text |
+| **Touch Target Size** | WCAG 2.5.5 / 2.5.8 | ≥ 48×48px bounding box validation |
+| **Component Scoping** | — | Isolate modals/dialogs, exclude third-party ad widgets |
+| **Severity Quality Gate** | — | CI build fails on `critical` or `serious` violations |
+
+```bash
+# Run Accessibility tests
+npx playwright test tests/ui/accessibility.spec.ts
+```
+
+---
+
+## 🧠 Vector Database, Embeddings & NL-to-SQL (RAG)
+
+The platform includes a **Vector Store** (`agents/vector/VectorStore.ts`) and **NL-to-SQL Agent** (`agents/sql/NlToSqlAgent.ts`) for AI-powered schema retrieval and natural language query generation:
+
+```mermaid
+graph LR
+    NL["Natural Language Assertion"] --> EMB["Embedding Vector"]
+    EMB --> VDB[("Vector Store / pgvector")]
+    VDB --> SIM["Cosine Similarity Search"]
+    SIM --> RAG["Top-K Schema Retrieval (RAG)"]
+    RAG --> SQL["Safe Parameterized SQL"]
+    SQL --> GUARD["SQL Injection Guardrails"]
+```
+
+| Capability | What It Does |
+| :--- | :--- |
+| **Embedding Generation** | Converts text into high-dimensional normalized vectors using character n-gram frequency hashing |
+| **Cosine Similarity Search** | k-NN semantic search for retrieving the most relevant schemas |
+| **Schema RAG (Retrieval-Augmented Generation)** | Indexes table schemas into vector store; retrieves only relevant tables for SQL generation |
+| **NL-to-SQL Translation** | Translates natural language requirements into verified SQL queries |
+| **SQL Safety Guardrails** | Rejects destructive DDL/DML (`DROP`, `DELETE`, `TRUNCATE`, `ALTER`, `; --`) |
+| **Test Deduplication** | Identifies semantically duplicate test cases via similarity thresholds |
+| **Self-Healing Locators** | Matches broken CSS/XPath selectors to new DOM elements by semantic meaning |
+
+```bash
+# Run Vector DB & NL-to-SQL tests
+npx playwright test tests/ai/nl-to-sql-vector.spec.ts
+```
+
+---
+
 ## 📊 Reports & CI/CD Pipelines
 
 * **Dual CI/CD Integration**:
-  * **GitHub Actions**: Automated regression on every push/PR with instant artifact publishing.
-  * **GitLab CI**: Fully configured `.gitlab-ci.yml` multi-stage pipeline.
+  * **GitHub Actions**: Automated regression on every push/PR with instant artifact publishing (Node.js 22 LTS, 4 parallel workers, `npm ci`).
+  * **GitLab CI**: Fully configured `.gitlab-ci.yml` multi-stage pipeline (Build → Test → Performance).
 * **Interactive Live Reporting**:
   * View real-time test execution graphs, metrics, and video traces at **[https://abhirise1981.github.io/ai-test-automation-platform/](https://abhirise1981.github.io/ai-test-automation-platform/)**.
 * **Local Report Viewer**:
