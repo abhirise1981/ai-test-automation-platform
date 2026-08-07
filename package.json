@@ -4,6 +4,7 @@
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
+    "test:cross-browser": "EXECUTION_TARGET=cross-browser playwright test",
     "test:mobile-web": "EXECUTION_TARGET=mobile-web playwright test",
     "test:browserstack": "EXECUTION_TARGET=browserstack playwright test",
     "test:aws": "EXECUTION_TARGET=aws playwright test",

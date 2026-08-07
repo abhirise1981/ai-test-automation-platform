@@ -17,7 +17,13 @@ let projectsConfig: any[] = [
   },
 ];
 
-if (target === 'mobile-web') {
+if (target === 'cross-browser') {
+  projectsConfig = [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+  ];
+} else if (target === 'mobile-web') {
   projectsConfig = [
     { name: 'mobile-chrome', use: { ...devices['Pixel 7'] } },
     { name: 'mobile-safari', use: { ...devices['iPhone 14'] } },
