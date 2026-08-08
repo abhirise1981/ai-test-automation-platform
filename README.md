@@ -19,60 +19,40 @@ A state-of-the-art, enterprise-grade test automation platform unifying **Web UI*
 
 ```mermaid
 graph TB
-    subgraph "1. JIRA AGENT"
-        JA[Jira Client<br/>axios + jira.js] -->|Fetches User Story| JP[Story Parser<br/>Extracts AC, Priority, Type]
+    subgraph AI["🤖 AI AUTONOMOUS LAYER"]
+        direction LR
+        JIRA["1. Jira Agent<br/>Fetch Story + ACs"] --> PLAN["2. Planner Agent<br/>Generate BRD"]
+        PLAN --> GEN["3. Generator Agent<br/>Write .spec.ts Code"]
+        GEN --> HEAL["4. Healer Agent<br/>Self-Heal Locators"]
     end
 
-    subgraph "2. PLANNER AGENT"
-        JP -->|Story JSON| PA[Planner Agent]
-        PA -->|Analyzes Story + ACs| BRD[BRD Generator<br/>Creates .md file]
+    subgraph MCP["🔌 MCP SERVER — Tool Orchestration"]
+        direction LR
+        T1["fetch_story"] ~~~ T2["generate_brd"] ~~~ T3["generate_tests"] ~~~ T4["heal_tests"] ~~~ T5["run_tests"]
     end
 
-    subgraph "3. GENERATOR AGENT"
-        BRD -->|BRD .md file| GA[Generator Agent]
-        GA -->|Uses POM Templates| TS[Web Spec Generator<br/>Creates Playwright .spec.ts]
-        GA -->|Mobile Stories| MS[Mobile Spec Generator<br/>Creates Appium .spec.ts]
+    subgraph EXEC["🧪 TEST EXECUTION LAYER"]
+        direction LR
+        WEB["🌐 Web UI E2E<br/>Playwright + POM"]
+        APITST["🔌 REST + GraphQL<br/>APIRequestContext"]
+        STRIPE["💳 Stripe Billing<br/>HMAC-SHA256"]
+        A11Y["♿ Accessibility<br/>Axe-Core WCAG 2.1"]
+        MOBILE["📱 Native Mobile<br/>Appium + WDIO"]
+        PERF["⚡ Load Testing<br/>Gatling SDK"]
+        NLSQL["🧠 NL-to-SQL<br/>Vector RAG"]
     end
 
-    subgraph "4. SELF-HEALING ENGINE"
-        TS -->|Execution Failure| HA[Healer Agent]
-        MS -->|Execution Failure| HA
-        HA -->|DOM & AST Analysis| FIX[Auto-Fix Engine<br/>Locator Healing + Retries]
-        FIX -->|Patches Scripts| TS
-        FIX -->|Patches Scripts| MS
+    subgraph INFRA["☁️ INFRASTRUCTURE + REPORTING"]
+        direction LR
+        LOCAL["Chromium / Firefox / WebKit"]
+        BS["BrowserStack Cloud<br/>Real iOS + Android"]
+        CICD["GitHub Actions + GitLab CI"]
+        RPT["📊 Live Dashboard<br/>GitHub Pages"]
     end
 
-    subgraph "5. MODEL CONTEXT PROTOCOL (MCP) SERVER"
-        MCP[MCP Orchestrator<br/>Express + SSE] -->|Tool: run_tests| EX[Execution Engine]
-        MCP -->|Tool: fetch_story| JA
-        MCP -->|Tool: generate_brd| PA
-        MCP -->|Tool: generate_tests| GA
-        MCP -->|Tool: heal_tests| HA
-        MCP -->|Tool: run_mobile| MOB[Mobile Executor]
-    end
-
-    subgraph "6. MULTI-PLATFORM TEST EXECUTION"
-        EX --> LOCAL[Playwright Web E2E<br/>Chromium / WebKit / Firefox]
-        EX --> API[REST & GraphQL API<br/>Nominatim, Countries API]
-        EX --> STRIPE[Stripe Billing & Cryptography<br/>HMAC-SHA256 Webhook Engine]
-        EX --> A11Y[Accessibility Engine<br/>Axe-Core WCAG 2.1 AA]
-        MOB --> APPIUM[Appium & WebdriverIO<br/>iOS Simulator / Android Emulator]
-        MOB --> BS[BrowserStack Cloud<br/>Real iOS & Android Devices]
-    end
-
-    subgraph "7. VECTOR DB & NL-to-SQL (RAG)"
-        VDB[(Vector Store<br/>pgvector / Embeddings)] --> SIM[Cosine Similarity<br/>Schema Retrieval]
-        SIM --> NL2SQL[NL-to-SQL Agent<br/>Natural Language → SQL]
-        NL2SQL --> GUARD[SQL Safety Guardrails<br/>Injection Prevention]
-    end
-
-    subgraph "8. REPORTING & ANALYTICS"
-        LOCAL --> RPT[Playwright HTML & Monocart Reports]
-        API --> RPT
-        STRIPE --> RPT
-        A11Y --> RPT
-        RPT --> GHPAGES[Live GitHub Pages Deployment]
-    end
+    AI --> MCP
+    MCP --> EXEC
+    EXEC --> INFRA
 ```
 
 ---
@@ -110,7 +90,7 @@ npx playwright install --with-deps
 
 ### 2. Run Test Suites
 ```bash
-# Run all automated tests (UI, REST, GraphQL, Stripe)
+# Run all automated tests (UI, REST, GraphQL, Stripe, Accessibility, AI)
 npm run test
 
 # Run UI E2E tests only
@@ -121,6 +101,15 @@ npx playwright test tests/api/stripe.spec.ts
 
 # Run REST & GraphQL API tests only
 npx playwright test tests/api/location.spec.ts tests/api/graphql.spec.ts
+
+# Run Accessibility (WCAG 2.1 AA) tests
+npx playwright test tests/ui/accessibility.spec.ts
+
+# Run Vector DB & NL-to-SQL (RAG) tests
+npx playwright test tests/ai/
+
+# Run Cross-Browser tests (Chromium + Firefox + WebKit)
+npm run test:cross-browser
 
 # Run Mobile-Web responsive tests
 npm run test:mobile-web
@@ -136,6 +125,9 @@ npm run test:mobile:android
 
 # Run iOS Native Tests
 npm run test:mobile:ios
+
+# Run on BrowserStack Real Devices
+npm run test:mobile:browserstack
 ```
 
 ### 4. Gatling Performance & Load Testing
@@ -209,7 +201,7 @@ npx playwright test tests/ai/nl-to-sql-vector.spec.ts
 ## 📊 Reports & CI/CD Pipelines
 
 * **Dual CI/CD Integration**:
-  * **GitHub Actions**: Automated regression on every push/PR with instant artifact publishing (Node.js 22 LTS, 4 parallel workers, `npm ci`).
+  * **GitHub Actions**: Automated regression on every push/PR with instant artifact publishing (Node.js 22 LTS, 2 parallel CI workers, `npm ci`).
   * **GitLab CI**: Fully configured `.gitlab-ci.yml` multi-stage pipeline (Build → Test → Performance).
 * **Interactive Live Reporting**:
   * View real-time test execution graphs, metrics, and video traces at **[https://abhirise1981.github.io/ai-test-automation-platform/](https://abhirise1981.github.io/ai-test-automation-platform/)**.
