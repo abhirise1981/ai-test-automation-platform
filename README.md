@@ -19,7 +19,7 @@ A state-of-the-art, enterprise-grade test automation platform unifying **Web UI*
 
 ```mermaid
 graph TB
-    subgraph AI["🤖 AI AUTONOMOUS PIPELINE LAYER"]
+    subgraph AI["🤖 AUTONOMOUS AI AGENTS LAYER"]
         direction LR
         JIRA["1. Jira Agent<br/>Fetch Story + ACs"] --> PLAN["2. Planner Agent<br/>Generate BRD"]
         PLAN --> GEN["3. Generator Agent<br/>Write .spec.ts Code"]
@@ -42,7 +42,7 @@ graph TB
         NLSQL["🧠 NL-to-SQL<br/>Vector RAG"]
     end
 
-    subgraph INFRA["☁️ CI/CD PIPELINE & INFRASTRUCTURE"]
+    subgraph INFRA["☁️ CI/CD & INFRASTRUCTURE LAYER"]
         direction LR
         LOCAL["Chromium / Firefox / WebKit"]
         BS["BrowserStack Cloud<br/>Real iOS + Android"]
