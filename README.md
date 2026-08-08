@@ -19,11 +19,11 @@ A state-of-the-art, enterprise-grade test automation platform unifying **Web UI*
 
 ```mermaid
 graph TB
-    subgraph AI["🤖 AUTONOMOUS AI AGENTS LAYER"]
+    subgraph AI["🤖 AUTONOMOUS AI AGENTS LAYER — Pipeline Orchestrator (pipeline.ts)"]
         direction LR
-        JIRA["1. Jira Agent<br/>Fetch Story + ACs"] --> PLAN["2. Planner Agent<br/>Generate BRD"]
-        PLAN --> GEN["3. Generator Agent<br/>Write .spec.ts Code"]
-        GEN --> HEAL["4. Healer Agent<br/>Self-Heal Locators"]
+        JIRA["1. Jira Agent<br/>Fetch Story + ACs"] -->|pipeline.ts| PLAN["2. Planner Agent<br/>Generate BRD"]
+        PLAN -->|pipeline.ts| GEN["3. Generator Agent<br/>Write .spec.ts Code"]
+        GEN -->|pipeline.ts| HEAL["4. Healer Agent<br/>Self-Heal Locators"]
     end
 
     subgraph MCP["🔌 MCP SERVER — Tool Orchestration"]
