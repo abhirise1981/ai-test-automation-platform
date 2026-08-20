@@ -10,3 +10,6 @@ agents/healer/healing-reports/
 playwright-report/
 .DS_Store
 .llm-cache/
+interview_prep/
+interview-practice/
+mortgage-test-architect-prep/
