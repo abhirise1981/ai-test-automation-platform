@@ -12,6 +12,7 @@ import 'dotenv/config';
 import { JiraClient } from './jira/JiraClient';
 import { StoryParser } from './jira/StoryParser';
 import { PlannerAgent } from './planner/PlannerAgent';
+import { executeGenerateBrd } from '../mcp-server/tools/generateBrdTool';
 import { GeneratorAgent } from './generator/GeneratorAgent';
 import { HealerAgent } from './healer/HealerAgent';
 
@@ -66,10 +67,16 @@ async function runPipeline() {
     console.log(`  ACs:      ${story.acceptanceCriteria.length} items`);
     console.log('');
 
-    // ── Step 2: Planner Agent ──────────────────────────────────────────
-    console.log('━━━ Step 2/5: Planner Agent — Generating BRD ━━━');
+    // ── Step 2: Planner Agent & MCP Tool ───────────────────────────────
+    console.log('━━━ Step 2/5: Planner Agent & MCP Tool — Generating BRD ━━━');
+    
+    // The Brain thinks in memory
     const planner = new PlannerAgent();
-    const brdPath = await planner.generateBrd(story);
+    const { markdown, issueKey } = await planner.generateBrd(story);
+    
+    // The Hands (MCP) write to disk
+    const { brdPath } = await executeGenerateBrd({ issueKey, markdown });
+    
     console.log(`  BRD:      ${brdPath}`);
     console.log('');
 

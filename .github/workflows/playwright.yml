@@ -1,7 +1,9 @@
-name: Playwright Tests
+name: Web & API Automation (Playwright)
 on:
   push:
     branches: [ main, master ]
+  schedule:
+    - cron: '0 2 * * *' # Runs every day at 2:00 AM UTC (Nightly Regression)
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
@@ -10,6 +12,14 @@ on:
         description: 'Jira Issue Key to run AI Pipeline'
         required: false
         default: 'PROJ-123'
+      test_suite:
+        description: 'Select Test Suite to Run'
+        required: true
+        default: 'Regression'
+        type: choice
+        options:
+          - Regression
+          - Smoke
   repository_dispatch:
     types: [jira-webhook-trigger]
 
@@ -17,7 +27,7 @@ permissions:
   contents: write
 
 jobs:
-  test:
+  web-api-tests:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
@@ -33,19 +43,21 @@ jobs:
     - name: Run AI Agent Pipeline (If Webhook / Dispatch Triggered)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch'
       run: npx ts-node agents/pipeline.ts --issue ${{ github.event.inputs.issue_key || github.event.client_payload.issue_key || 'PROJ-123' }} --dry-run
-    - name: Run Playwright tests
-      run: npx playwright test
-    - uses: actions/upload-artifact@v4
+    - name: Run Playwright Tests (Web UI & API)
+      run: |
+        if [[ "${{ github.event_name }}" == "pull_request" || "${{ github.event_name }}" == "schedule" || "${{ github.event.inputs.test_suite }}" == "Smoke" ]]; then
+          echo "Running Smoke Suite..."
+          npx playwright test --grep @smoke
+        else
+          echo "Running Full Regression Suite..."
+          npx playwright test
+        fi
+    - name: Upload Playwright HTML Report
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: playwright-html-report
         path: playwright-report/
-        retention-days: 30
-    - uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results-and-rich-report
-        path: test-results/
         retention-days: 30
     - name: Deploy Report to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4

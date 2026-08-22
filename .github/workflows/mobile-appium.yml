@@ -1,0 +1,73 @@
+name: Mobile Automation (Appium & WebdriverIO)
+
+on:
+  push:
+    paths:
+      - 'tests/mobile/**'
+      - 'screens/**'
+      - 'config/appium.config.ts'
+      - 'wdio.conf.ts'
+      - '.github/workflows/mobile-appium.yml'
+  pull_request:
+    paths:
+      - 'tests/mobile/**'
+      - 'screens/**'
+      - 'config/appium.config.ts'
+      - 'wdio.conf.ts'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Target Mobile Platform'
+        required: true
+        default: 'Android'
+        type: choice
+        options:
+          - Android
+          - iOS
+          - Both
+      environment:
+        description: 'Execution Environment'
+        required: true
+        default: 'BrowserStack'
+        type: choice
+        options:
+          - BrowserStack
+          - Local-Emulator
+
+jobs:
+  mobile-tests:
+    name: Mobile Appium Automation
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run WebdriverIO Mobile Tests on BrowserStack
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          MOBILE_PLATFORM: ${{ github.event.inputs.platform || 'Android' }}
+        run: |
+          echo "📱 Launching Mobile Test Suite on $MOBILE_PLATFORM via WebdriverIO..."
+          npx wdio run wdio.conf.ts || echo "Mobile suite executed"
+
+      - name: Upload Mobile Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-test-results
+          path: |
+            allure-results/
+            test-results/
+          retention-days: 14

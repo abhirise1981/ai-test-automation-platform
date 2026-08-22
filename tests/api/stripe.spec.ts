@@ -13,7 +13,7 @@ test.describe('Stripe Billing & Clinical SaaS Payment API Suite', () => {
   // 1. WEBHOOK CRYPTOGRAPHIC SIGNATURE & REPLAY SECURITY TESTS
   // ─────────────────────────────────────────────────────────────────────────
   test.describe('Webhook Cryptographic Security & Verification', () => {
-    test('TC-STRIPE-01: Should generate valid HMAC-SHA256 Stripe-Signature header', async () => {
+    test('TC-STRIPE-01: Should generate valid HMAC-SHA256 Stripe-Signature header', { tag: '@smoke' }, async () => {
       const payload = JSON.stringify({ id: 'evt_test_123', type: 'payment_intent.succeeded' });
       const secret = testConfig.stripe.webhookSecret;
 

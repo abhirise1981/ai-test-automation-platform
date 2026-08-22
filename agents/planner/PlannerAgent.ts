@@ -11,8 +11,6 @@
  * The BRD is the contract between the Planner and the Generator Agent.
  */
 import 'dotenv/config';
-import * as fs from 'fs';
-import * as path from 'path';
 import OpenAI from 'openai';
 import type { ParsedStory } from '../jira/StoryParser';
 import { type BrdContent, BrdTemplate, type TestScenario } from './BrdTemplate';
@@ -24,7 +22,6 @@ import { LlmCache } from '../utils/LlmCache';
 
 const AI_PROVIDER = process.env.AI_MODEL_PROVIDER || 'openai';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-const BRD_OUTPUT_DIR = path.resolve(__dirname, 'brd-output');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // System Prompt for AI Analysis
@@ -93,9 +90,9 @@ export class PlannerAgent {
 
   /**
    * Generate a BRD from a parsed Jira story.
-   * Returns the file path of the generated BRD markdown file.
+   * Returns the generated markdown string and issue key.
    */
-  async generateBrd(story: ParsedStory): Promise<string> {
+  async generateBrd(story: ParsedStory): Promise<{ markdown: string; issueKey: string }> {
     console.log(`[PlannerAgent] 📋 Analyzing story: ${story.key} — "${story.summary}"`);
     console.log(`[PlannerAgent] Platform: ${story.platform} | Priority: ${story.priority}`);
     console.log(`[PlannerAgent] Acceptance Criteria: ${story.acceptanceCriteria.length} items`);
@@ -117,13 +114,10 @@ export class PlannerAgent {
     // Step 3: Generate the markdown document
     const markdown = this.brdTemplate.generate(brdContent);
 
-    // Step 4: Save to file
-    const filePath = this.saveBrd(story.key, markdown);
-
-    console.log(`[PlannerAgent] ✅ BRD generated: ${filePath}`);
+    console.log(`[PlannerAgent] ✅ BRD string generated in memory for: ${story.key}`);
     console.log(`[PlannerAgent] 📊 ${analysis.scenarios.length} test scenarios identified`);
 
-    return filePath;
+    return { markdown, issueKey: story.key };
   }
 
   // ─── AI Analysis ─────────────────────────────────────────────────────────
@@ -279,17 +273,5 @@ export class PlannerAgent {
 
   // ─── File Output ─────────────────────────────────────────────────────────
 
-  private saveBrd(issueKey: string, content: string): string {
-    // Ensure output directory exists
-    if (!fs.existsSync(BRD_OUTPUT_DIR)) {
-      fs.mkdirSync(BRD_OUTPUT_DIR, { recursive: true });
-    }
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-    const filename = `BRD-${issueKey}-${timestamp}.md`;
-    const filePath = path.join(BRD_OUTPUT_DIR, filename);
-
-    fs.writeFileSync(filePath, content, 'utf-8');
-    return filePath;
-  }
+  // File system operations have been moved to the MCP Tool layer to enforce Separation of Concerns.
 }
