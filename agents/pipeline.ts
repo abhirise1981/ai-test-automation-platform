@@ -69,14 +69,14 @@ async function runPipeline() {
 
     // ── Step 2: Planner Agent & MCP Tool ───────────────────────────────
     console.log('━━━ Step 2/5: Planner Agent & MCP Tool — Generating BRD ━━━');
-    
+
     // The Brain thinks in memory
     const planner = new PlannerAgent();
     const { markdown, issueKey } = await planner.generateBrd(story);
-    
+
     // The Hands (MCP) write to disk
     const { brdPath } = await executeGenerateBrd({ issueKey, markdown });
-    
+
     console.log(`  BRD:      ${brdPath}`);
     console.log('');
 
