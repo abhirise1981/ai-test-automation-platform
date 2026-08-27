@@ -104,12 +104,23 @@ async function runPipeline() {
       const projectRoot = path.resolve(__dirname, '..');
 
       try {
-        execSync(`npx playwright test`, {
-          cwd: projectRoot,
-          stdio: 'inherit',
-          env: { ...process.env, EXECUTION_TARGET: args.target },
-          timeout: 300000,
-        });
+        if (args.target === 'browserstack' || story.platform === 'mobile') {
+          console.log('📱 Executing Mobile Appium Suite on BrowserStack (WebdriverIO)...');
+          execSync(`npx wdio run wdio.conf.ts`, {
+            cwd: projectRoot,
+            stdio: 'inherit',
+            env: { ...process.env, EXECUTION_TARGET: args.target },
+            timeout: 300000,
+          });
+        } else {
+          console.log('🌐 Executing Web & API Playwright Suite...');
+          execSync(`npx playwright test`, {
+            cwd: projectRoot,
+            stdio: 'inherit',
+            env: { ...process.env, EXECUTION_TARGET: args.target },
+            timeout: 300000,
+          });
+        }
         console.log('  ✅ All tests passed!');
       } catch {
         console.log('  ❌ Some tests failed — proceeding to Healer Agent');
