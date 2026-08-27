@@ -13,3 +13,6 @@ playwright-report/
 interview_prep/
 interview-practice/
 mortgage-test-architect-prep/
+*.jmx
+load-tests/*.jmx
+jmeter.log
