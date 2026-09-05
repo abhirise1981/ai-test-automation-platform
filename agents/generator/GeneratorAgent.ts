@@ -21,6 +21,7 @@ import {
   WEB_UI_SYSTEM_PROMPT,
 } from './PromptTemplates';
 import { CodeValidator, type ValidationResult } from './CodeValidator';
+import { LlmCache } from '../utils/LlmCache';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -47,10 +48,12 @@ export class GeneratorAgent {
   private openaiClient: OpenAI | null = null;
   private readonly codeValidator: CodeValidator;
   private readonly projectRoot: string;
+  private readonly llmCache: LlmCache;
 
   constructor() {
     this.projectRoot = path.resolve(__dirname, '../..');
     this.codeValidator = new CodeValidator(this.projectRoot);
+    this.llmCache = new LlmCache();
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (apiKey) {
@@ -218,6 +221,14 @@ export class GeneratorAgent {
       return this.generateScaffold(userPrompt);
     }
 
+    // ─── LlmCache Layer: SHA-256 dedup before hitting OpenAI ──────────────
+    const cachePrompt = `${systemPrompt}\n---\n${userPrompt}`;
+    const cachedResult = await this.llmCache.get<string>(cachePrompt);
+    if (cachedResult) {
+      console.log('[GeneratorAgent] ⚡ Cache HIT — Returning cached code (zero API cost)');
+      return cachedResult;
+    }
+
     const response = await this.openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -233,7 +244,13 @@ export class GeneratorAgent {
     // Strip markdown code fences if present
     content = content.replace(/^```(?:typescript|ts)?\n/gm, '').replace(/```$/gm, '');
 
-    return content.trim();
+    const trimmedContent = content.trim();
+
+    // Persist to cache for future dedup
+    await this.llmCache.set(cachePrompt, trimmedContent);
+    console.log('[GeneratorAgent] 💾 Response cached for future dedup');
+
+    return trimmedContent;
   }
 
   private buildGenerationPrompt(brdContent: string, platform: string, examples: Record<string, string>): string {
