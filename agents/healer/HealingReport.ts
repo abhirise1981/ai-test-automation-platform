@@ -1,8 +1,11 @@
 /**
- * HealingReport.ts — Healing Action Report Generator
+ * HealingReport.ts — Advisory Healing Report Generator
  *
- * Generates markdown reports documenting all healing actions taken by the Healer Agent.
- * Reports include before/after diffs, confidence scores, and human-review flags.
+ * Generates a markdown diagnostic report documenting all failure classifications
+ * and healing suggestions provided by the Healer Agent.
+ *
+ * This report is ADVISORY — it never patches code. Engineers review the
+ * suggestions and decide which fixes to apply manually.
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -10,12 +13,7 @@ import type { FailureAnalysis } from './LocatorHealer';
 
 export interface HealingAction {
   analysis: FailureAnalysis;
-  actionTaken: 'AUTO_FIXED' | 'SUGGESTION_ONLY' | 'SKIPPED' | 'HUMAN_REVIEW';
-  patchApplied?: {
-    file: string;
-    oldContent: string;
-    newContent: string;
-  };
+  actionTaken: 'SUGGESTION_PROVIDED' | 'NEEDS_INVESTIGATION' | 'CLASSIFIED_ONLY';
   timestamp: string;
 }
 
@@ -24,7 +22,7 @@ export class HealingReport {
   private readonly outputDir: string;
 
   constructor(outputDir?: string) {
-    this.outputDir = outputDir || path.resolve(__dirname, '../../agents/healer/healing-reports');
+    this.outputDir = outputDir || path.resolve(process.cwd(), 'healing-reports');
   }
 
   /** Record a healing action. */
@@ -32,29 +30,41 @@ export class HealingReport {
     this.actions.push(action);
   }
 
-  /** Generate and save the full healing report. */
+  /** Generate and save the advisory healing report. */
   generate(): string {
+    const suggestions = this.actions.filter((a) => a.actionTaken === 'SUGGESTION_PROVIDED').length;
+    const investigations = this.actions.filter((a) => a.actionTaken === 'NEEDS_INVESTIGATION').length;
+    const classified = this.actions.filter((a) => a.actionTaken === 'CLASSIFIED_ONLY').length;
+
     const lines: string[] = [
-      `# 🩹 Healing Report`,
+      `# 🩹 Healing Advisory Report`,
+      ``,
+      `> **Mode: Advisory Only** — No code was modified. Review suggestions below and apply fixes manually.`,
       ``,
       `**Generated:** ${new Date().toISOString()}`,
       `**Total Failures Analyzed:** ${this.actions.length}`,
-      `**Auto-Fixed:** ${this.actions.filter((a) => a.actionTaken === 'AUTO_FIXED').length}`,
-      `**Needs Human Review:** ${this.actions.filter((a) => a.actionTaken === 'HUMAN_REVIEW').length}`,
-      `**Skipped:** ${this.actions.filter((a) => a.actionTaken === 'SKIPPED').length}`,
+      `**Suggestions Provided:** ${suggestions}`,
+      `**Needs Investigation:** ${investigations}`,
+      `**Classified Only:** ${classified}`,
       ``,
       `---`,
       ``,
       `## Summary`,
       ``,
-      `| # | Test | Failure Type | Action | Confidence |`,
-      `|---|------|-------------|--------|------------|`,
+      `| # | Test | Failure Type | Status | Top Confidence |`,
+      `|---|------|-------------|--------|----------------|`,
     ];
 
     this.actions.forEach((action, i) => {
       const topConfidence = action.analysis.healingSuggestions[0]?.suggestions[0]?.confidence || 0;
+      const statusIcon =
+        action.actionTaken === 'SUGGESTION_PROVIDED'
+          ? '💡'
+          : action.actionTaken === 'NEEDS_INVESTIGATION'
+            ? '🔬'
+            : '📋';
       lines.push(
-        `| ${i + 1} | ${action.analysis.testName} | ${action.analysis.failureType} | ${action.actionTaken} | ${(topConfidence * 100).toFixed(0)}% |`,
+        `| ${i + 1} | ${action.analysis.testName} | ${action.analysis.failureType} | ${statusIcon} ${action.actionTaken} | ${(topConfidence * 100).toFixed(0)}% |`,
       );
     });
 
@@ -65,10 +75,11 @@ export class HealingReport {
       lines.push(`### ${action.analysis.testName}`);
       lines.push('');
       lines.push(`- **File:** \`${action.analysis.testFile}\``);
-      lines.push(`- **Type:** ${action.analysis.failureType}`);
-      lines.push(`- **Action:** ${action.actionTaken}`);
-      lines.push(`- **Auto-Fixable:** ${action.analysis.autoFixable ? 'Yes' : 'No'}`);
-      lines.push(`- **Human Review:** ${action.analysis.requiresHumanReview ? '⚠️ Yes' : 'No'}`);
+      lines.push(`- **Failure Type:** ${action.analysis.failureType}`);
+      lines.push(`- **Status:** ${action.actionTaken}`);
+      lines.push(
+        `- **Needs Investigation:** ${action.analysis.requiresHumanReview ? '⚠️ Yes' : 'No'}`,
+      );
       lines.push('');
 
       if (action.analysis.brokenSelector) {
@@ -77,27 +88,18 @@ export class HealingReport {
       }
 
       if (action.analysis.healingSuggestions.length > 0) {
-        lines.push('**Healing Suggestions:**');
+        lines.push('**Suggested Fixes (apply manually):**');
         lines.push('');
         lines.push('| # | Selector | Strategy | Confidence |');
         lines.push('|---|----------|----------|------------|');
 
         for (const suggestion of action.analysis.healingSuggestions) {
-          for (const s of suggestion.suggestions) {
-            lines.push(`| | \`${s.selector}\` | ${s.strategy} | ${(s.confidence * 100).toFixed(0)}% |`);
-          }
+          suggestion.suggestions.forEach((s, idx) => {
+            lines.push(
+              `| ${idx + 1} | \`${s.selector}\` | ${s.strategy} | ${(s.confidence * 100).toFixed(0)}% |`,
+            );
+          });
         }
-        lines.push('');
-      }
-
-      if (action.patchApplied) {
-        lines.push('**Patch Applied:**');
-        lines.push('');
-        lines.push(`File: \`${action.patchApplied.file}\``);
-        lines.push('```diff');
-        lines.push(`- ${action.patchApplied.oldContent}`);
-        lines.push(`+ ${action.patchApplied.newContent}`);
-        lines.push('```');
         lines.push('');
       }
 
@@ -117,7 +119,7 @@ export class HealingReport {
     const filePath = path.join(this.outputDir, `healing-report-${timestamp}.md`);
     fs.writeFileSync(filePath, markdown, 'utf-8');
 
-    console.log(`[HealingReport] ✅ Report saved: ${filePath}`);
+    console.log(`[HealingReport] ✅ Advisory report saved: ${filePath}`);
     return filePath;
   }
 }

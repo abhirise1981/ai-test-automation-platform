@@ -1,5 +1,5 @@
 /**
- * LocatorHealer.ts — Smart Locator Self-Healing Engine
+ * LocatorHealer.ts — Smart Locator Failure Classifier & Suggestion Engine
  *
  * When a test fails due to a broken locator (element not found),
  * this module analyzes the failure and suggests replacement selectors.
@@ -41,7 +41,8 @@ export interface FailureAnalysis {
   brokenSelector?: string;
   healingSuggestions: HealingSuggestion[];
   requiresHumanReview: boolean;
-  autoFixable: boolean;
+  /** True when the engine can offer concrete selector suggestions */
+  suggestionsAvailable: boolean;
 }
 
 export class LocatorHealer {
@@ -60,7 +61,7 @@ export class LocatorHealer {
       brokenSelector,
       healingSuggestions: [],
       requiresHumanReview: failureType === 'ASSERTION_DRIFT' || failureType === 'APP_CRASH',
-      autoFixable: failureType === 'LOCATOR_BROKEN' || failureType === 'TIMING_FLAKY',
+      suggestionsAvailable: failureType === 'LOCATOR_BROKEN' || failureType === 'TIMING_FLAKY',
     };
   }
 

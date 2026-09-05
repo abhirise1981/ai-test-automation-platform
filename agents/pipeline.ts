@@ -130,22 +130,24 @@ async function runPipeline() {
     }
     console.log('');
 
-    // ── Step 5: Healer Agent ───────────────────────────────────────────
+    // ── Step 5: Healer Agent (Advisory) ──────────────────────────────────
     if (!args.dryRun) {
-      console.log('━━━ Step 5/5: Healer Agent — Analyzing Results ━━━');
+      console.log('━━━ Step 5/5: Healer Agent — Post-Execution Diagnostics ━━━');
       try {
         const healer = new HealerAgent();
         const healResult = await healer.healFromResults('test-results/results.json');
-        console.log(`  Passed:   ${healResult.passed}/${healResult.totalTests}`);
-        console.log(`  Failed:   ${healResult.failed}`);
-        console.log(`  Healed:   ${healResult.healed}`);
-        console.log(`  Review:   ${healResult.needsHumanReview}`);
-        console.log(`  Report:   ${healResult.reportPath}`);
+        console.log(`  Passed:       ${healResult.passed}/${healResult.totalTests}`);
+        console.log(`  Failed:       ${healResult.failed}`);
+        console.log(`  Suggestions:  ${healResult.suggestionsGenerated}`);
+        console.log(`  Investigate:  ${healResult.needsHumanReview}`);
+        if (healResult.reportPath) {
+          console.log(`  Report:       ${healResult.reportPath}`);
+        }
       } catch (error) {
-        console.log('  ⚠️ No JSON results file found — skipping healing');
+        console.log('  ⚠️ No JSON results file found — skipping diagnostics');
       }
     } else {
-      console.log('━━━ Step 5/5: [DRY RUN] Skipping healer ━━━');
+      console.log('━━━ Step 5/5: [DRY RUN] Skipping healer diagnostics ━━━');
     }
 
     // ── Summary ────────────────────────────────────────────────────────

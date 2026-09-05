@@ -21,6 +21,7 @@
     "format:check": "prettier --check '**/*.ts'",
     "mcp:start": "npx ts-node mcp-server/server.ts",
     "agent:pipeline": "npx ts-node agents/pipeline.ts",
+    "agent:healer": "npx ts-node agents/healer/HealerAgent.ts",
     "prepare": "husky"
   },
   "dependencies": {
