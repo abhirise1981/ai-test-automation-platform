@@ -12,7 +12,7 @@
  *           WHERE d.name = 'John Doe';
  */
 
-import { VectorStore, VectorSearchResult } from '../vector/VectorStore';
+import { PgVectorDB, VectorSearchResult } from '../vector/PgVectorDB';
 
 export interface TableSchema {
   tableName: string;
@@ -29,11 +29,11 @@ export interface SqlGenerationResult {
 }
 
 export class NlToSqlAgent {
-  private vectorStore: VectorStore;
+  private vectorStore: PgVectorDB;
   private registeredSchemas: Map<string, TableSchema> = new Map();
 
-  constructor(vectorStore?: VectorStore) {
-    this.vectorStore = vectorStore || new VectorStore();
+  constructor(vectorStore?: PgVectorDB) {
+    this.vectorStore = vectorStore || new PgVectorDB();
   }
 
   /**

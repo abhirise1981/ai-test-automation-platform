@@ -40,7 +40,13 @@ export class CodeValidator {
     // 4. Test Data Reference Validation
     this.validateTestDataReferences(code, errors, warnings);
 
-    // 5. TypeScript Compilation Check (write temp file, run tsc --noEmit)
+    // 5. Security Guardrails — Secrets & Credential Leak Prevention
+    this.validateSecurityGuardrails(code, targetPath, errors, warnings);
+
+    // 6. Vulnerability Detection — OWASP-Aligned InfoSec Checks
+    this.validateVulnerabilities(code, targetPath, errors, warnings);
+
+    // 7. TypeScript Compilation Check (write temp file, run tsc --noEmit)
     await this.validateTypeScript(code, targetPath, errors, warnings);
 
     return {
@@ -172,6 +178,132 @@ export class CodeValidator {
           }
         }
       }
+    }
+  }
+
+  // ─── Security Guardrails — Secrets & Credential Leak Prevention ──────────
+
+  private validateSecurityGuardrails(
+    code: string,
+    targetPath: string,
+    errors: string[],
+    warnings: string[],
+  ): void {
+    // 5a. Hardcoded Secrets Detection (API keys, tokens, passwords, connection strings)
+    const secretPatterns: Array<{ pattern: RegExp; label: string; severity: 'error' | 'warning' }> = [
+      { pattern: /['"](?:sk|pk|rk)[-_](?:live|test|prod)[a-zA-Z0-9]{20,}['"]/g, label: 'API secret key', severity: 'error' },
+      { pattern: /['"](?:ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9]{30,}['"]/g, label: 'GitHub token', severity: 'error' },
+      { pattern: /['"]xox[bpors]-[a-zA-Z0-9-]{20,}['"]/g, label: 'Slack token', severity: 'error' },
+      { pattern: /['"]AKIA[0-9A-Z]{16}['"]/g, label: 'AWS Access Key', severity: 'error' },
+      { pattern: /['"]eyJ[a-zA-Z0-9_-]{50,}\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+['"]/g, label: 'JWT token', severity: 'error' },
+      { pattern: /(?:password|passwd|pwd|secret)\s*[:=]\s*['"][^'"]{4,}['"]/gi, label: 'Hardcoded password/secret', severity: 'error' },
+      { pattern: /(?:mongodb|postgres|mysql|redis):\/\/[^'")\s]{10,}/gi, label: 'Database connection string', severity: 'error' },
+      { pattern: /['"][A-Za-z0-9+/]{40,}={0,2}['"]/g, label: 'Possible Base64-encoded secret', severity: 'warning' },
+    ];
+
+    for (const { pattern, label, severity } of secretPatterns) {
+      const matches = code.match(pattern);
+      if (matches) {
+        const msg = `SECURITY: ${label} detected in code (${matches.length} occurrence(s)). Use environment variables via process.env instead.`;
+        severity === 'error' ? errors.push(msg) : warnings.push(msg);
+      }
+    }
+
+    // 5b. Dangerous Function Usage
+    if (/\beval\s*\(/.test(code)) {
+      errors.push('SECURITY: eval() usage detected — high risk for code injection attacks. Remove immediately.');
+    }
+    if (/new\s+Function\s*\(/.test(code)) {
+      errors.push('SECURITY: new Function() constructor detected — equivalent to eval(), code injection risk.');
+    }
+    if (/child_process.*exec\b/.test(code) && !targetPath.includes('CodeValidator')) {
+      warnings.push('SECURITY: child_process exec usage detected — risk of command injection. Use execFile() with args array instead.');
+    }
+
+    // 5c. Insecure Protocol Usage
+    const httpUrls = code.match(/['"]http:\/\/(?!localhost|127\.0\.0\.1|0\.0\.0\.0)[^'"]+['"]/g);
+    if (httpUrls) {
+      warnings.push(
+        `SECURITY: ${httpUrls.length} insecure HTTP URL(s) detected. Use HTTPS for all non-local endpoints.`,
+      );
+    }
+
+    // 5d. Disabled Security Controls
+    if (/rejectUnauthorized\s*:\s*false/.test(code)) {
+      errors.push('SECURITY: TLS certificate validation disabled (rejectUnauthorized: false). This enables MITM attacks.');
+    }
+    if (/NODE_TLS_REJECT_UNAUTHORIZED.*['"]0['"]/.test(code)) {
+      errors.push('SECURITY: NODE_TLS_REJECT_UNAUTHORIZED=0 disables all TLS validation globally. Critical vulnerability.');
+    }
+  }
+
+  // ─── Vulnerability Detection — OWASP-Aligned InfoSec Checks ─────────────
+
+  private validateVulnerabilities(
+    code: string,
+    targetPath: string,
+    errors: string[],
+    warnings: string[],
+  ): void {
+    // 6a. XSS — Cross-Site Scripting Detection
+    if (/\.innerHTML\s*=/.test(code)) {
+      warnings.push('VULN [XSS]: innerHTML assignment detected — risk of cross-site scripting. Use textContent or sanitize input.');
+    }
+    if (/document\.write\s*\(/.test(code)) {
+      errors.push('VULN [XSS]: document.write() detected — DOM-based XSS vector. Remove and use safe DOM APIs.');
+    }
+    const unsafeInterpolation = code.match(/\$\{.*(?:user|input|param|query|req\.|body).*\}/gi);
+    if (unsafeInterpolation) {
+      warnings.push('VULN [XSS]: Template literal with user-controlled data detected. Ensure proper sanitization/encoding.');
+    }
+
+    // 6b. SQL Injection Detection
+    const sqlInjection = code.match(/(?:query|execute|raw)\s*\(\s*`[^`]*\$\{/g);
+    if (sqlInjection) {
+      errors.push('VULN [SQLi]: String interpolation in SQL query detected — use parameterized queries ($1, ?) to prevent SQL injection.');
+    }
+
+    // 6c. CSRF — Missing Token Validation
+    if (/\.post\s*\(|\.put\s*\(|\.delete\s*\(/i.test(code) && targetPath.includes('/api/')) {
+      if (!/csrf|xsrf|x-csrf-token|x-xsrf-token/i.test(code)) {
+        warnings.push('VULN [CSRF]: State-changing API call without CSRF token header. InfoSec review recommended.');
+      }
+    }
+
+    // 6d. PII Exposure in Logs
+    const piiLogging = code.match(/(?:console\.log|logger\.\w+)\s*\([^)]*(?:ssn|social|creditCard|cardNumber|dateOfBirth|email|phone|password|token|bearer)[^)]*\)/gi);
+    if (piiLogging) {
+      errors.push('VULN [PII]: Personally Identifiable Information may be logged. Mask or redact sensitive fields before logging.');
+    }
+
+    // 6e. Insecure HTTP Headers
+    if (/Access-Control-Allow-Origin.*['"]\*['"]/i.test(code)) {
+      warnings.push('VULN [CORS]: Wildcard Access-Control-Allow-Origin (*) detected — allows any domain to access the resource.');
+    }
+    if (/Access-Control-Allow-Credentials.*true/i.test(code) && /Access-Control-Allow-Origin.*\*/i.test(code)) {
+      errors.push('VULN [CORS]: Allow-Credentials with wildcard origin — critical misconfiguration that bypasses same-origin policy.');
+    }
+
+    // 6f. Open Redirect Detection
+    const openRedirect = code.match(/(?:redirect|location\.href|window\.location)\s*=\s*(?:req\.|params\.|query\.)/gi);
+    if (openRedirect) {
+      errors.push('VULN [Open Redirect]: Redirect using user-controlled input detected — validate against an allowlist of trusted URLs.');
+    }
+
+    // 6g. Weak Cryptography
+    if (/createHash\s*\(\s*['"](?:md5|sha1)['"]\s*\)/i.test(code)) {
+      warnings.push('VULN [Crypto]: Weak hash algorithm (MD5/SHA1) detected. Use SHA-256+ for integrity, bcrypt/argon2 for passwords.');
+    }
+    if (/DES|RC4|Blowfish/i.test(code) && /createCipher/i.test(code)) {
+      errors.push('VULN [Crypto]: Deprecated encryption algorithm detected (DES/RC4/Blowfish). Use AES-256-GCM.');
+    }
+
+    // 6h. Dependency & Config Security
+    if (/require\s*\(\s*[^'"]/.test(code)) {
+      warnings.push('VULN [Injection]: Dynamic require() detected — potential remote code execution if input is user-controlled.');
+    }
+    if (/\.env\b/.test(code) && /fs\.readFileSync/.test(code) && !/dotenv/i.test(code)) {
+      warnings.push('VULN [Config]: Manual .env file reading detected — use dotenv library for safe environment variable loading.');
     }
   }
 

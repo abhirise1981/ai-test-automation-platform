@@ -29,7 +29,9 @@
     "axios": "^1.7.0",
     "dotenv": "^16.4.0",
     "jira.js": "^4.0.0",
-    "openai": "^4.70.0"
+    "openai": "^4.70.0",
+    "pg": "^8.23.0",
+    "pgvector": "^0.3.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
@@ -38,6 +40,7 @@
     "@gatling.io/http": "^3.15.103",
     "@playwright/test": "^1.49.1",
     "@types/node": "^26.1.0",
+    "@types/pg": "^8.23.1",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "@wdio/cli": "^9.0.0",

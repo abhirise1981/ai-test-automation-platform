@@ -9,15 +9,15 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { VectorStore } from '../../agents/vector/VectorStore';
+import { PgVectorDB } from '../../agents/vector/PgVectorDB';
 import { NlToSqlAgent, TableSchema } from '../../agents/sql/NlToSqlAgent';
 
 test.describe('GenAI Vector Database, Embeddings & NL-to-SQL Suite', () => {
-  let vectorStore: VectorStore;
+  let vectorStore: PgVectorDB;
   let nlToSqlAgent: NlToSqlAgent;
 
   test.beforeEach(async () => {
-    vectorStore = new VectorStore(64);
+    vectorStore = new PgVectorDB(64);
     nlToSqlAgent = new NlToSqlAgent(vectorStore);
   });
 
