@@ -88,7 +88,11 @@ describe('Mobile (Chrome DevTools Emulation) - E-Commerce Critical Flows', funct
     await base.open(`${baseUrl}/products`);
     const addToCartButtons = await driver.findElements(By.css('.productinfo .add-to-cart'));
     expect(addToCartButtons.length).to.be.greaterThan(0);
-    await addToCartButtons[0].click();
+    try {
+      await addToCartButtons[0].click();
+    } catch {
+      await driver.executeScript('arguments[0].click();', addToCartButtons[0]);
+    }
 
     // Modal confirmation should appear even at mobile width
     const modal = await base.waitVisible(By.css('#cartModal .modal-content'));

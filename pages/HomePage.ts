@@ -93,6 +93,7 @@ export class HomePage extends BasePage {
     
     // Click "Continue Shopping" to close the modal safely
     const continueButton = this.page.getByRole('button', { name: 'Continue Shopping' });
-    await continueButton.click();
+    await expect(continueButton).toBeVisible();
+    await continueButton.click({ force: true });
   }
 }

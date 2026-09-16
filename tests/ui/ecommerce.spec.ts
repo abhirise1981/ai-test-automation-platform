@@ -24,10 +24,22 @@ test.describe('E-Commerce Critical Flow Tests', () => {
     dynamicUserEmail = `toptal_user_${Date.now()}_w${testInfo.workerIndex}_${randomSuffix}@gmail.com`;
 
     // Block Google Ads and external trackers selectively to prevent ad overlays without breaking font/resource loading
+    await page.route('**/*googleads*', route => route.abort());
     await page.route('**/*googleadservices*', route => route.abort());
     await page.route('**/*googlesyndication*', route => route.abort());
     await page.route('**/*doubleclick*', route => route.abort());
     await page.route('**/*adservice*', route => route.abort());
+    await page.route('**/*google-analytics*', route => route.abort());
+
+    await page.addInitScript(() => {
+      window.addEventListener('DOMContentLoaded', () => {
+        const removeAds = () => {
+          document.querySelectorAll('iframe[id*="aswift"], iframe[src*="googleads"], iframe[src*="doubleclick"], .adsbygoogle, [id*="ad_position"]').forEach(el => el.remove());
+        };
+        removeAds();
+        setInterval(removeAds, 500);
+      });
+    });
 
     // Navigate to the base URL
     await homePage.navigateTo(testConfig.baseUrl);
