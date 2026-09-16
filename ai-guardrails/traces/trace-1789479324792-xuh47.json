@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-09-15T13:35:24.792Z",
+  "runType": "guardrail-check",
+  "input": "What is the flight schedule for interplanetary shuttle to Mars?",
+  "output": {
+    "allowed": true,
+    "reason": null,
+    "flags": [],
+    "redactedInput": "What is the flight schedule for interplanetary shuttle to Mars?"
+  }
+}

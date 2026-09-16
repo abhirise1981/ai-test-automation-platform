@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-09-15T13:37:45.382Z",
+  "runType": "guardrail-check",
+  "input": "What is the refund policy for this order?",
+  "output": {
+    "allowed": true,
+    "reason": null,
+    "flags": [],
+    "redactedInput": "What is the refund policy for this order?"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-09-15T15:32:09.838Z",
+  "runType": "guardrail-check",
+  "input": "How soon are domestic shipments dispatched?",
+  "output": {
+    "allowed": true,
+    "reason": null,
+    "flags": [],
+    "redactedInput": "How soon are domestic shipments dispatched?"
+  }
+}

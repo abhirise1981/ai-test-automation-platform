@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-09-15T15:56:54.859Z",
+  "runType": "guardrail-check",
+  "input": "Can you summarize the last three support tickets?",
+  "output": {
+    "allowed": true,
+    "reason": null,
+    "flags": [],
+    "redactedInput": "Can you summarize the last three support tickets?"
+  }
+}

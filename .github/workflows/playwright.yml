@@ -1,0 +1,188 @@
+name: QE Pipeline - Full Suite
+
+# WHY SEPARATE JOBS (not one big `playwright test` run):
+# Each job below maps to one interview-defensible answer: "what runs in
+# your CI/CD, and why is it a separate stage?" Splitting them means a
+# security regression doesn't hide inside a UI test failure, and each
+# stage's runtime/log is independently inspectable and re-runnable.
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: {}   # allows manual trigger, e.g. for the load-test job
+
+jobs:
+
+  # ---------------------------------------------------------------
+  # STAGE 1: UI regression (Playwright, Desktop Chrome)
+  # ---------------------------------------------------------------
+  ui-tests:
+    name: UI Regression (Playwright)
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/ui --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: ui-report, path: playwright-report/, retention-days: 30 }
+
+  # ---------------------------------------------------------------
+  # STAGE 2: Mobile responsive-web (Playwright device emulation)
+  # ---------------------------------------------------------------
+  mobile-playwright-tests:
+    name: Mobile Web (Playwright Emulation)
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:mobile
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: mobile-playwright-report, path: playwright-report/, retention-days: 30 }
+
+  # ---------------------------------------------------------------
+  # STAGE 3: Mobile - Selenium WebDriver (cross-framework harness)
+  # ---------------------------------------------------------------
+  mobile-selenium-tests:
+    name: Mobile Web (Selenium WebDriver)
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Install & run mobile Selenium suite
+        working-directory: ./mobile-selenium
+        run: |
+          npm install
+          npm test
+
+  # ---------------------------------------------------------------
+  # STAGE 4: API functional tests
+  # ---------------------------------------------------------------
+  api-tests:
+    name: API Tests
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:api
+
+  # ---------------------------------------------------------------
+  # STAGE 5: Security tests (OWASP API Top 10 aligned)
+  # ---------------------------------------------------------------
+  security-tests:
+    name: API Security Tests
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:security
+
+  # ---------------------------------------------------------------
+  # STAGE 6: Accessibility (WCAG 2.2 AA, axe-core)
+  # ---------------------------------------------------------------
+  accessibility-tests:
+    name: Accessibility (WCAG 2.2 AA)
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:accessibility
+
+  # ---------------------------------------------------------------
+  # STAGE 7: AI guardrail layer (deterministic - no external LLM calls,
+  # so it is fast, free, and 100% reproducible in CI)
+  # ---------------------------------------------------------------
+  ai-guardrails-tests:
+    name: AI Guardrails
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:ai
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: guardrail-traces, path: ai-guardrails/traces/, retention-days: 14 }
+
+  # ---------------------------------------------------------------
+  # STAGE 8: Load test - manual trigger only (never blocks a normal
+  # push/PR; load tests are noisy against a shared public demo site
+  # and belong in a controlled window, not every commit).
+  # ---------------------------------------------------------------
+  load-test:
+    name: Load Test (Gatling) - manual only
+    if: github.event_name == 'workflow_dispatch'
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm install
+      - run: npx gatling run --simulation load-tests/ecommerce.gatling.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: gatling-report, path: target/gatling/, retention-days: 30 }
+
+  # ---------------------------------------------------------------
+  # QUALITY GATE: aggregates every mandatory stage. This is the single
+  # required check branch protection points at - one job, clear
+  # pass/fail, instead of six separate required checks to maintain.
+  # ---------------------------------------------------------------
+  quality-gate:
+    name: Quality Gate
+    needs:
+      - ui-tests
+      - mobile-playwright-tests
+      - mobile-selenium-tests
+      - api-tests
+      - security-tests
+      - accessibility-tests
+      - ai-guardrails-tests
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Evaluate all required stages
+        run: |
+          echo "ui-tests: ${{ needs.ui-tests.result }}"
+          echo "mobile-playwright-tests: ${{ needs.mobile-playwright-tests.result }}"
+          echo "mobile-selenium-tests: ${{ needs.mobile-selenium-tests.result }}"
+          echo "api-tests: ${{ needs.api-tests.result }}"
+          echo "security-tests: ${{ needs.security-tests.result }}"
+          echo "accessibility-tests: ${{ needs.accessibility-tests.result }}"
+          echo "ai-guardrails-tests: ${{ needs.ai-guardrails-tests.result }}"
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "One or more required QE stages failed - blocking merge."
+            exit 1
+          fi
+          echo "All required QE stages passed."

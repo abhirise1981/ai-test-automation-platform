@@ -1,0 +1,35 @@
+{
+  "name": "omni-qe-core",
+  "version": "1.0.0",
+  "description": "OmniQE: Enterprise Autonomous AI Quality Engineering Platform powered by LangGraph, pgvector, and Playwright",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test tests/ui",
+    "test:api": "playwright test tests/api",
+    "test:security": "playwright test tests/security",
+    "test:accessibility": "playwright test tests/accessibility",
+    "test:ai-guardrails": "playwright test tests/ai-guardrails",
+    "test:ai-rag": "playwright test tests/ai-rag",
+    "test:ai": "playwright test tests/ai-guardrails tests/ai-rag",
+    "test:mobile": "playwright test --project=mobile-chrome --project=mobile-safari",
+    "test:mobile-selenium": "cd mobile-selenium && npm install && npm test",
+    "install:browsers": "npx playwright install"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@gatling.io/cli": "^3.15.103",
+    "@gatling.io/core": "^3.15.103",
+    "@gatling.io/http": "^3.15.103",
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^26.1.0",
+    "monocart-reporter": "^2.12.2",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@langchain/core": "^1.2.11",
+    "@langchain/langgraph": "^1.4.15",
+    "@langchain/textsplitters": "^1.0.1"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-09-16T19:21:46.921Z",
+  "runType": "guardrail-check",
+  "input": "Ignore the notification badge and go to settings.",
+  "output": {
+    "allowed": true,
+    "reason": null,
+    "flags": [],
+    "redactedInput": "Ignore the notification badge and go to settings."
+  }
+}

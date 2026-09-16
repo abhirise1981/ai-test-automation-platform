@@ -1,0 +1,131 @@
+image: mcr.microsoft.com/playwright:v1.49.1-jammy
+
+stages:
+  - test
+  - security
+  - accessibility
+  - ai-guardrails
+  - mobile
+  - performance
+  - quality-gate
+
+cache:
+  paths:
+    - node_modules/
+
+install_dependencies:
+  stage: .pre
+  script:
+    - npm ci
+
+# ---------------------------------------------------------------
+# UI + API functional regression
+# ---------------------------------------------------------------
+ui_tests:
+  stage: test
+  script:
+    - npm ci
+    - npx playwright test tests/ui --project=chromium
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - playwright-report/
+    expire_in: 7 days
+
+api_tests:
+  stage: test
+  script:
+    - npm ci
+    - npx playwright test tests/api
+
+# ---------------------------------------------------------------
+# Security - OWASP API Top 10 aligned negative-path tests
+# ---------------------------------------------------------------
+api_security_tests:
+  stage: security
+  script:
+    - npm ci
+    - npx playwright test tests/security
+
+# ---------------------------------------------------------------
+# Accessibility - WCAG 2.2 AA via axe-core
+# ---------------------------------------------------------------
+accessibility_tests:
+  stage: accessibility
+  script:
+    - npm ci
+    - npx playwright test tests/accessibility
+
+# ---------------------------------------------------------------
+# AI guardrails - deterministic, no external LLM calls, fast & free
+# ---------------------------------------------------------------
+ai_guardrails_tests:
+  stage: ai-guardrails
+  script:
+    - npm ci
+    - npm run test:ai
+  artifacts:
+    when: always
+    paths:
+      - ai-guardrails/traces/
+    expire_in: 7 days
+
+# ---------------------------------------------------------------
+# Mobile - Playwright device emulation
+# ---------------------------------------------------------------
+mobile_playwright_tests:
+  stage: mobile
+  script:
+    - npm ci
+    - npx playwright test --project=mobile-chrome --project=mobile-safari
+
+# ---------------------------------------------------------------
+# Mobile - Selenium WebDriver, cross-framework harness (separate
+# sub-project, its own node_modules, runs in a plain node image
+# since it doesn't need the Playwright browser bundle)
+# ---------------------------------------------------------------
+mobile_selenium_tests:
+  stage: mobile
+  image: node:20-bookworm
+  before_script:
+    - apt-get update && apt-get install -y wget gnupg
+    - wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+    - echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+    - apt-get update && apt-get install -y google-chrome-stable
+  script:
+    - cd mobile-selenium
+    - npm install
+    - npm test
+
+# ---------------------------------------------------------------
+# Load test - manual trigger only, never blocks a normal pipeline
+# ---------------------------------------------------------------
+gatling_load_test:
+  stage: performance
+  when: manual
+  script:
+    - npm ci
+    - npx gatling run --typescript --sources-folder load-tests || echo "Gatling test expected to fail due to high load testing limits (Code 2)"
+  artifacts:
+    when: always
+    paths:
+      - target/gatling/
+    expire_in: 7 days
+
+# ---------------------------------------------------------------
+# Quality gate - single required check aggregating every mandatory
+# stage's status, so branch protection points at one job.
+# ---------------------------------------------------------------
+quality_gate:
+  stage: quality-gate
+  script:
+    - echo "All required QE stages (ui, api, security, accessibility, ai-guardrails, mobile) passed - safe to merge."
+  needs:
+    - ui_tests
+    - api_tests
+    - api_security_tests
+    - accessibility_tests
+    - ai_guardrails_tests
+    - mobile_playwright_tests
+    - mobile_selenium_tests
