@@ -4,3 +4,4 @@ export * from './embeddings/pgvectorStore';
 export * from './evals/ragMetrics';
 export * from './graph/ragAgentGraph';
 export * from './pipeline/pipeline';
+export * from './validator/specCodeValidator';

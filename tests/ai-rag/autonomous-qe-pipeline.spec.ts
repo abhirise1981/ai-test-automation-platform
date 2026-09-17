@@ -37,21 +37,32 @@ test.describe('Autonomous AI QE Pipeline - LangGraph & In-Memory MCP Tools', () 
 
     const result = await pipeline.run('PROD-409');
 
-    // 1. Assert full execution path
-    expect(result.executionPath).toEqual(['planner', 'generator', 'executor']);
+    // 1. Assert full execution path through the Code Validator quality gate
+    expect(result.executionPath).toEqual(['planner', 'generator', 'validator', 'executor']);
     expect(result.testStatus).toBe('passed');
 
-    // 2. Assert Planner generated structured test plan
+    // 2. Assert Code Validator verified the generated spec against all 4 quality gates
+    expect(result.validationResult).not.toBeNull();
+    expect(result.validationResult?.valid).toBe(true);
+    expect(result.validationResult?.qualityScore).toBe(100);
+    expect(result.validationResult?.passedGates).toEqual([
+      'SECURITY_SANDBOX_GATE',
+      'FRAMEWORK_CONFORMANCE_GATE',
+      'ASSERTION_INTEGRITY_GATE',
+      'ANTI_PATTERN_GATE',
+    ]);
+
+    // 3. Assert Planner generated structured test plan
     expect(result.testPlan).not.toBeNull();
     expect(result.testPlan?.jiraKey).toBe('PROD-409');
     expect(result.testPlan?.testSteps.length).toBeGreaterThan(0);
     expect(result.acceptanceCriteria).toContain('Cancel Order');
 
-    // 3. Assert Generator produced Playwright spec in-memory
+    // 4. Assert Generator produced Playwright spec in-memory
     expect(result.generatedSpecCode).toContain("import { test, expect } from '@playwright/test'");
     expect(result.generatedSpecCode).toContain('button[data-testid="order-cancel-btn"]');
 
-    // 4. Assert ZERO disk writes: All artifacts live in inMemoryArtifacts map
+    // 5. Assert ZERO disk writes: All artifacts live in inMemoryArtifacts map
     expect(result.inMemoryArtifacts['specs/PROD-409.plan.md']).toBeDefined();
     expect(result.inMemoryArtifacts['tests/generated/PROD-409.spec.ts']).toBeDefined();
   });
@@ -64,8 +75,8 @@ test.describe('Autonomous AI QE Pipeline - LangGraph & In-Memory MCP Tools', () 
 
     const result = await pipeline.run('PROD-410');
 
-    // 1. Assert state machine routed: planner -> generator -> executor -> healer
-    expect(result.executionPath).toEqual(['planner', 'generator', 'executor', 'healer']);
+    // 1. Assert state machine routed: planner -> generator -> validator -> executor -> healer
+    expect(result.executionPath).toEqual(['planner', 'generator', 'validator', 'executor', 'healer']);
     expect(result.testStatus).toBe('healed');
 
     // 2. Assert Healer diagnosed and generated patch
@@ -82,5 +93,25 @@ test.describe('Autonomous AI QE Pipeline - LangGraph & In-Memory MCP Tools', () 
     expect(result.inMemoryArtifacts['tests/healed/PROD-410.patch.diff']).toContain(
       '-button.legacy-cancel-link\n+button[data-testid="order-cancel-btn"]'
     );
+  });
+
+  test('QE-PIPE-03: Code Validator quality gate intercepts insecure or malformed code before execution', async () => {
+    const pipeline = new AutonomousQePipeline({
+      vectorStore: pgStore,
+      simulateValidationFailure: true, // Injects eval() and waitForTimeout to trigger Quality Gate!
+    });
+
+    const result = await pipeline.run('PROD-411');
+
+    // 1. Assert execution was blocked at validator node (NEVER reaches executor!)
+    expect(result.executionPath).toEqual(['planner', 'generator', 'validator']);
+    expect(result.testStatus).toBe('failed');
+
+    // 2. Assert Quality Gate flagged the security and anti-pattern violations
+    expect(result.validationResult).not.toBeNull();
+    expect(result.validationResult?.valid).toBe(false);
+    expect(result.validationResult?.failedGates).toContain('SECURITY_SANDBOX_GATE');
+    expect(result.validationResult?.failedGates).toContain('ANTI_PATTERN_GATE');
+    expect(result.failureTrace).toContain('CodeQualityGateError');
   });
 });

@@ -3,6 +3,7 @@ import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { PgVectorStore } from '../embeddings/pgvectorStore';
 import { VectorStore } from '../embeddings/vectorStore';
+import { SpecCodeValidator, CodeQualityGateResult } from '../validator/specCodeValidator';
 
 /**
  * AUTONOMOUS AI QE MULTI-AGENT PIPELINE (pipeline.ts)
@@ -70,6 +71,12 @@ export const AutonomousQeAnnotation = Annotation.Root({
 
   // Healer output
   healedPatch: Annotation<HealedLocatorPatch | null>({
+    reducer: (_, update) => update,
+    default: () => null,
+  }),
+
+  // Code Validator Quality Gate output (Post-Generation AST & Security Validation)
+  validationResult: Annotation<CodeQualityGateResult | null>({
     reducer: (_, update) => update,
     default: () => null,
   }),
@@ -205,16 +212,19 @@ export function createMcpQeTools(vectorStore?: VectorStore) {
 export interface QePipelineOptions {
   vectorStore?: VectorStore;
   simulateFailureOnFirstRun?: boolean;
+  simulateValidationFailure?: boolean;
 }
 
 export class AutonomousQePipeline {
   private app: any;
   private tools: ReturnType<typeof createMcpQeTools>;
   private simulateFailure: boolean;
+  private simulateValidationFailure: boolean;
 
   constructor(options: QePipelineOptions = {}) {
     this.tools = createMcpQeTools(options.vectorStore);
     this.simulateFailure = options.simulateFailureOnFirstRun ?? false;
+    this.simulateValidationFailure = options.simulateValidationFailure ?? false;
     this.app = this.buildGraph();
   }
 
@@ -270,8 +280,8 @@ export class AutonomousQePipeline {
           ? 'button.legacy-cancel-link' // Broken selector
           : domInfo.elements[0].selector;
 
-        // Generate Playwright TypeScript code in-memory (0 disk writes!)
-        const generatedCode = `import { test, expect } from '@playwright/test';
+        // If simulateValidationFailure is enabled, purposely generate insecure code with eval
+        let generatedCode = `import { test, expect } from '@playwright/test';
 
 test.describe('${state.testPlan?.featureTitle}', () => {
   test('cancel order before dispatch', async ({ page }) => {
@@ -283,6 +293,15 @@ test.describe('${state.testPlan?.featureTitle}', () => {
   });
 });`;
 
+        if (this.simulateValidationFailure) {
+          generatedCode = `import { test } from '@playwright/test';
+// Insecure code flagged by SpecCodeValidator
+eval("process.exit(1)");
+test('unsafe test', async ({ page }) => {
+  page.waitForTimeout(5000);
+});`;
+        }
+
         return {
           generatedSpecCode: generatedCode,
           testStatus: 'generated' as const,
@@ -290,6 +309,24 @@ test.describe('${state.testPlan?.featureTitle}', () => {
           inMemoryArtifacts: {
             [`tests/generated/${state.jiraKey}.spec.ts`]: generatedCode,
           },
+        };
+      })
+
+      // Node 2.5: SPEC CODE VALIDATOR (Post-Generation Quality Gate)
+      .addNode('validator', async (state) => {
+        const qualityResult = SpecCodeValidator.validate(state.generatedSpecCode);
+        if (!qualityResult.valid) {
+          return {
+            validationResult: qualityResult,
+            testStatus: 'failed' as const,
+            failureTrace: `CodeQualityGateError: ${qualityResult.errors.join('; ')}`,
+            executionPath: ['validator'],
+          };
+        }
+
+        return {
+          validationResult: qualityResult,
+          executionPath: ['validator'],
         };
       })
 
@@ -342,7 +379,13 @@ test.describe('${state.testPlan?.featureTitle}', () => {
       // Edge Routing
       .addEdge(START, 'planner')
       .addEdge('planner', 'generator')
-      .addEdge('generator', 'executor')
+      .addEdge('generator', 'validator')
+      .addConditionalEdges('validator', (state) => {
+        if (state.testStatus === 'failed') {
+          return END; // Block unsafe/malformed code from execution!
+        }
+        return 'executor';
+      })
       // Conditional Routing on test outcome:
       .addConditionalEdges('executor', (state) => {
         if (state.testStatus === 'failed') {
